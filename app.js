@@ -54,7 +54,7 @@ passport.use(
       .catch((err) => done(err));
   })
 );
-
+console.log("Hello World")
 app.use("/", auth);
 
 app.set("views", path.join(__dirname, "views"));
