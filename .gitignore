@@ -1,3 +1,6 @@
+node_modules
+checkDb.js
+
 # Logs
 logs
 *.log
