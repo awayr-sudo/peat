@@ -5,7 +5,7 @@ const { dbCon } = require("../db/db");
 const AttendanceM = dbCon.define(
   "Attendance",
   {
-    userId: {
+    user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -13,28 +13,46 @@ const AttendanceM = dbCon.define(
         key: "id",
       },
     },
-
-    checkIn: {
+    check_in: {
       type: DataTypes.DATE,
+      allowNull: true,
     },
-    checkOut: {
+    check_out: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    lunch_start: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    lunch_end: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
     },
   },
   {
-    tableName: "Attendance",
+    timestamps: false,
   }
 );
 
 AttendanceM.belongsTo(usersM, {
-  foreignKey: "userId",
+  foreignKey: "user_id",
 });
 
 AttendanceM.sync({ alter: true })
   .then(() => {
-    console.log("User table created successfully!");
+    console.log("Attendance table synced successfully!");
   })
   .catch((error) => {
-    console.error("Unable to create table : ", error);
+    console.error("Unable to sync table : ", error);
   });
+
 module.exports = AttendanceM;

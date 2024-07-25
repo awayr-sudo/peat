@@ -1,12 +1,9 @@
 const { DataTypes } = require("sequelize");
 const { dbCon } = require("../db/db");
 
-// usersM.sync({ alter: true }) when we want to add a new field in our table
-
 const usersM = dbCon.define(
   "users",
   {
-    
     full_name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -14,6 +11,7 @@ const usersM = dbCon.define(
     email: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true, // Add unique constraint to email
     },
     password: {
       type: DataTypes.STRING,
@@ -25,7 +23,7 @@ const usersM = dbCon.define(
     },
     forget_code: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true, 
     },
     access_key: {
       type: DataTypes.STRING,

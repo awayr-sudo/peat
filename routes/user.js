@@ -5,107 +5,12 @@ const bcrypt = require("bcryptjs");
 const user = express.Router();
 const passport = require("passport");
 const AttendanceM = require("../models/attendanceM");
-const LunchBreakM = require("../models/lunchbreakM");
+const BreaksM = require("../models/breaksM");
 
-// Updating own details for all users
-user.post("/change-my-details", async (req, res, next) => {
-  passport.authenticate("bearer", { session: false }, async (err, user) => {
-    if (err) {
-      console.error("Error during authentication:", err);
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
-    if (user) {
-      // User is authenticated
-      const { name, email, password } = req.body;
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      try {
-        console.log(user.id);
-        user.full_name = name;
-        user.email = email;
-        user.password = hashedPassword;
-        await user.save();
-
-        res.send(
-          `Updated user: ${user.full_name} + ${user.password} + ${user}`
-        );
-      } catch (err) {
-        return res.status(400).json({ error: err.message });
-      }
-    } else {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-  })(req, res, next);
-});
-
-// Updating users details -> manager roles only
-user.put("/change-user-details", async (req, res, next) => {
-  passport.authenticate("bearer", { session: false }, async (err, user) => {
-    if (err) {
-      console.error("Error during authentication:", err);
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    if (user && user.role == "manager") {
-      // User is authenticated
-      const { userid, name, email, password } = req.body;
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      try {
-        console.log(user.id);
-        const found_user = await usersM.findByPk(userid);
-        if (!found_user) {
-          return res.status(404).json({ message: "User not found" });
-        }
-
-        found_user.full_name = name;
-        found_user.email = email;
-        found_user.password = hashedPassword;
-        await found_user.save();
-        res.send(
-          `Updated user: ${found_user.full_name} + ${found_user.password} + ${found_user.email}`
-        );
-      } catch (err) {
-        return res.status(400).json({ error: err.message });
-      }
-    } else {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-  })(req, res, next);
-});
-
-// Deleting users -> manager roles only
-user.delete("/delete-user", async (req, res, next) => {
-  passport.authenticate("bearer", { session: false }, async (err, user) => {
-    if (err) {
-      console.error("Error during authentication:", err);
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    if (user && user.role == "manager") {
-      // User is authenticated
-      const { user_id } = req.body;
-
-      try {
-        const found_user = await usersM.findByPk(user_id);
-        if (!found_user) {
-          return res.status(404).json({ message: "User not found" });
-        }
-
-        await found_user.destroy();
-        res.send(`Deleted user: ${found_user.full_name}`);
-      } catch (err) {
-        return res.status(400).json({ error: err.message });
-      }
-    } else {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-  })(req, res, next);
-});
 
 //User Check-in
-user.post("/checkin", (req, res, next) => {
+user.post("/check_in", (req, res, next) => {
   passport.authenticate(
     "bearer",
     { session: false },
@@ -127,7 +32,7 @@ user.post("/checkin", (req, res, next) => {
 
         const attendance = await AttendanceM.findOne({
           where: {
-            userId: user.id,
+            user_id: user.id,
             createdAt: {
               [Op.between]: [startOfDay, endOfDay],
             },
@@ -138,8 +43,8 @@ user.post("/checkin", (req, res, next) => {
           res.status(201).json({ message: "you have already checked in" });
         } else {
           const attendance = await AttendanceM.create({
-            userId: user.id,
-            checkIn: new Date(),
+            user_id: user.id,
+            check_in: new Date(),
           });
 
           res.status(201).json(attendance);
@@ -173,11 +78,11 @@ user.post("/checkout", (req, res, next) => {
 
         const attendance = await AttendanceM.findOne({
           where: {
-            userId: user.id,
-            checkIn: {
+            user_id: user.id,
+            check_in: {
               [Op.ne]: null,
             },
-            checkOut: null,
+            check_out: null,
             createdAt: {
               [Op.between]: [startOfDay, endOfDay],
             },
@@ -185,13 +90,13 @@ user.post("/checkout", (req, res, next) => {
         });
 
         if (attendance) {
-          attendance.checkOut = new Date();
-          //Checkout time shouldn't be before the Checkin time
+          attendance.check_out = new Date();
+          //check_out time shouldn't be before the check_in time
 
-          if (attendance.checkOut < attendance.checkIn) {
+          if (attendance.check_out < attendance.check_in) {
             return res.status(400).json({ error: "Please Check in first" });
           }
-          (checkOutTime = attendance.checkOut), await attendance.save();
+          (checkOutTime = attendance.check_out), await attendance.save();
           res.json(attendance);
         } else {
           res.status(404).json({ error: "No active check-in found for user" });

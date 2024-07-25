@@ -1,10 +1,11 @@
 const { DataTypes } = require("sequelize");
 const { usersM } = require("./usersM");
 const { dbCon } = require("../db/db");
-const LunchBreakM = dbCon.define(
-  "LunchBreak",
+
+const BreaksM = dbCon.define(
+  "Breaks",
   {
-    userId: {
+    user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -12,36 +13,39 @@ const LunchBreakM = dbCon.define(
         key: "id",
       },
     },
-    startBreak: {
+    start_break: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    endBreak: {
+    end_break: {
       type: DataTypes.DATE,
+      allowNull: false,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
     },
   },
   {
-    tableName: "LunchBreaks",
+    timestamps: false,
   }
 );
 
-LunchBreakM.belongsTo(
-  usersM,
-  {
-    foreignKey: "userId",
-  },
-  { onDelete: "cascade" }
-);
+BreaksM.belongsTo(usersM, {
+  foreignKey: "user_id",
+  onDelete: "CASCADE",
+});
 
-LunchBreakM.sync({ alter: true })
+BreaksM.sync({ alter: true })
   .then(() => {
-    console.log("User table created successfully!");
+    console.log("BreaksM table synced successfully!");
   })
   .catch((error) => {
     console.error("Unable to create table : ", error);
   });
 
-module.exports = LunchBreakM;
+module.exports = BreaksM;
