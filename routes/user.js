@@ -26,30 +26,14 @@ user.post("/check_in", (req, res, next) => {
       try {
         const attendance = await AttendanceM.findOne({
           where: {
-<<<<<<< Updated upstream
-            user_id: user.id,
-            createdAt: {
-              [Op.between]: [startOfDay, endOfDay],
-            },
-          },
-        });
-
-        if (attendance) {
-          res.status(201).json({ message: "you have already checked in" });
-        } else {
-          const attendance = await AttendanceM.create({
-            user_id: user.id,
-            check_in: new Date(),
-=======
-            userId: user.id,
-            checkOut: null,
+            user_Id: user.id,
+            check_out: null,
           },
         });
         if (!attendance || attendance == null) {
           const checkin = await AttendanceM.create({
             userId: user.id,
             checkIn: new Date(),
->>>>>>> Stashed changes
           });
 
           return res.status(201).json(checkin);
@@ -81,24 +65,12 @@ user.post("/checkout", (req, res, next) => {
       try {
         const attendance = await AttendanceM.findOne({
           where: {
-<<<<<<< Updated upstream
             user_id: user.id,
-            check_in: {
-              [Op.ne]: null,
-            },
             check_out: null,
-            createdAt: {
-              [Op.between]: [startOfDay, endOfDay],
-            },
-=======
-            userId: user.id,
-            checkOut: null,
->>>>>>> Stashed changes
           },
         });
 
         if (attendance) {
-<<<<<<< Updated upstream
           attendance.check_out = new Date();
           //check_out time shouldn't be before the check_in time
 
@@ -107,17 +79,6 @@ user.post("/checkout", (req, res, next) => {
           }
           (checkOutTime = attendance.check_out), await attendance.save();
           res.json(attendance);
-=======
-          attendance.checkOut = new Date();
-          (checkOutTime = attendance.checkOut), await attendance.save();
-          res.json(attendance);
-          //Checkout time shouldn't be before the Checkin time
-
-          if (attendance.checkOut < attendance.checkIn) {
-            // res.json(attendance);
-            return res.status(400).json({ error: "Please Check in first" });
-          }
->>>>>>> Stashed changes
         } else {
           res.status(404).json({ error: "No active check-in found for user" });
         }
