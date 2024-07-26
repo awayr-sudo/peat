@@ -6,167 +6,120 @@ const user = express.Router();
 const passport = require("passport");
 const AttendanceM = require("../models/attendanceM");
 const BreaksM = require("../models/breaksM");
-
-
+const { key_authenticator } = require("../middlewares/user_authenticator");
 
 //User Check-in
-user.post("/check_in", (req, res, next) => {
-  passport.authenticate(
-    "bearer",
-    { session: false },
-    async (err, user, err_msg) => {
-      if (err) {
-        console.error("Error during authentication:", err);
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      if (!user) {
-        return res.status(401).json({ error: err_msg });
-      }
+user.post("/checkin", key_authenticator, async (req, res, next) => {
+  const user = req.user;
 
-      try {
-        const attendance = await AttendanceM.findOne({
-          where: {
-            user_Id: user.id,
-            check_out: null,
-          },
-        });
-        if (!attendance || attendance == null) {
-          const checkin = await AttendanceM.create({
-            userId: user.id,
-            checkIn: new Date(),
-          });
-
-          return res.status(201).json(checkin);
-        } else {
-          return res.status(201).json({
-            message: "you have already checkedin ! Please checkout first",
-          });
-        }
-      } catch (error) {
-        res.status(400).json({ error: error.message });
-      }
+  try {
+    const attendance = await AttendanceM.findOne({
+      where: { user_id: user.id, check_out: null },
+    });
+    if (!attendance || attendance == null) {
+      const check_in = await AttendanceM.create({
+        user_id: user.id,
+        check_in: new Date(),
+      });
+      return res.status(201).json(check_in);
+    } else {
+      return res.status(201).json({
+        message: "you have already checkedin ! Please checkout first",
+      });
     }
-  )(req, res, next);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 //User Check-Out
-user.post("/checkout", (req, res, next) => {
-  passport.authenticate(
-    "bearer",
-    { session: false },
-    async (err, user, err_msg) => {
-      if (err) {
-        console.error("Error during authentication:", err);
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      if (!user) {
-        return res.status(401).json({ error: err_msg });
-      }
-      try {
-        const attendance = await AttendanceM.findOne({
-          where: {
-            user_id: user.id,
-            check_out: null,
-          },
-        });
+user.post("/checkout", key_authenticator, async (req, res, next) => {
+  const user = req.user;
+  try {
+    const attendance = await AttendanceM.findOne({
+      where: {
+        user_id: user.id,
+        check_out: null,
+      },
+    });
 
-        if (attendance) {
-          attendance.check_out = new Date();
-          //check_out time shouldn't be before the check_in time
+    if (attendance) {
+      attendance.check_out = new Date();
+      //check_out time shouldn't be before the check_in time
 
-          if (attendance.check_out < attendance.check_in) {
-            return res.status(400).json({ error: "Please Check in first" });
-          }
-          (checkOutTime = attendance.check_out), await attendance.save();
-          res.json(attendance);
-        } else {
-          res.status(404).json({ error: "No active check-in found for user" });
-        }
-      } catch (error) {
-        res.status(400).json({ error: error.message });
+      if (attendance.check_out < attendance.check_in) {
+        return res.status(400).json({ error: "Please Check in first" });
       }
+      (checkOutTime = attendance.check_out), await attendance.save();
+      res.json(attendance);
+    } else if (!attendance) {
+      res.status(404).json({ error: "No active check-in found for user" });
     }
-  )(req, res, next);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 //Start Break
-user.post("/startbreak", (req, res, next) => {
-  passport.authenticate(
-    "bearer",
-    { session: false },
-    async (err, user, err_msg) => {
-      if (err) {
-        console.error("Error during authentication:", err);
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      if (!user) {
-        return res.status(401).json({ error: err_msg });
-      }
-      try {
-        const activeUser = await AttendanceM.findOne({
-          where: { userId: user.id, checkOut: null },
-        });
-        if (activeUser) {
-          const userLunch = await LunchBreakM.findOne({
-            where: {
-              userId: user.id,
-              endBreak: null,
-            },
-          });
-
-          if (activeUser && userLunch) {
-            return res
-              .status(201)
-              .json({ message: "You are already on lunch break" });
-          }
-
-          const lunchBreak = await LunchBreakM.create({
-            userId: user.id,
-            startBreak: new Date(),
-          });
-
-          res.status(201).json({ message: lunchBreak });
-        } else if (!active_user) {
-          return res.status(400).json({ error: "Please Check in first" });
-        }
-      } catch (error) {
-        res.status(400).json({ error: error.message });
-      }
+user.post("/startbreak", key_authenticator, async (req, res, next) => {
+  const user = req.user;
+  try {
+    const userLunch = await AttendanceM.findOne({
+      where: {
+        user_id: user.id,
+        lunch_start: null
+      },
+    });
+    if (userLunch){
+  
+        userLunch.update({
+          lunch_start: new Date()
+        })
+        return res.status(201).json(userLunch);
+      
+     
     }
-  )(req, res, next);
+    else{
+      return res
+        .status(201)
+        .json({ message: "You are already on lunch break" });
+    }
+  } catch (error) {
+    res.status(201).json({ error: error.message });
+  }
 });
 
 //End Break
-user.post("/endbreak", (req, res, next) => {
-  passport.authenticate(
-    "bearer",
-    { session: false },
-    async (err, user, err_msg) => {
-      if (err) {
-        console.error("Error during authentication:", err);
-        return res.status(401).json({ message: "Unauthorized" });
+user.post("/endbreak", key_authenticator, async (req, res, next) => {
+  const user = req.user;
+  try {
+    const userLunch = await AttendanceM.findOne({
+      where: { user_id: user.id, lunch_end: null },
+    });
+   
+
+      if (!userLunch) {
+        return res
+          .status(400)
+          .json({ error: "No active lunch break found for this user" });
+      } else
+       {
+        userLunch.update({
+          lunch_end: new Date()
+        })
+        return res.status(201).json(userLunch);
+        // const lunchBreak = await AttendanceM.update({
+        //   where:{
+        //   user_id: user.id,
+        //   lunch_end: new Date()}
+          // lunchBreak.lunch_end = new Date();
+          // await lunchBreak.save();
       }
-      if (!user) {
-        return res.status(401).json({ error: err_msg });
-      }
-      try {
-        const lunchBreak = await LunchBreakM.findOne({
-          where: { userId: user.id, endBreak: null },
-        });
-        if (!lunchBreak) {
-          return res
-            .status(400)
-            .json({ error: "No active lunch break found for this user" });
-        } else {
-          lunchBreak.endBreak = new Date();
-          await lunchBreak.save();
-          res.json(lunchBreak);
-        }
-      } catch (error) {
-        res.status(400).json({ error: error.message });
-      }
-    }
-  )(req, res, next);
+        return res.status(400).json(userLunch);
+      
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 module.exports = user;
