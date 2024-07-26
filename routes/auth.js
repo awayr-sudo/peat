@@ -61,12 +61,12 @@ auth.post("/register", async (req, res) => {
 
 auth.post("/forgot", async (req, res) => {
   try {
-    const { username, key, newPass } = req.body;
+    const { email, forgotCode, newPass } = req.body;
 
-    const user = await usersM.findOne({ where: { full_name: username } });
+    const user = await usersM.findOne({ where: { email: email } });
 
-    if (!user || user.forget_code !== key) {
-      return res.status(401).send("Invalid username or key");
+    if (!user || user.forget_code !== forgotCode) {
+      return res.status(401).send("Invalid email or forgot code");
     }
 
     const salt = 12;
@@ -74,7 +74,7 @@ auth.post("/forgot", async (req, res) => {
 
     await usersM.update({ password: hashPass }, { where: { id: user.id } });
 
-    await usersM.update({ forget_code: "null" }, { where: { id: user.id } });
+    // await usersM.update({ forget_code: "null" }, { where: { id: user.id } });
 
     res.status(200).send("Password changed successfully");
   } catch (error) {
