@@ -108,16 +108,9 @@ user.post("/endbreak", key_authenticator, async (req, res, next) => {
           lunch_end: new Date()
         })
         return res.status(201).json(userLunch);
-        // const lunchBreak = await AttendanceM.update({
-        //   where:{
-        //   user_id: user.id,
-        //   lunch_end: new Date()}
-          // lunchBreak.lunch_end = new Date();
-          // await lunchBreak.save();
-      }
-        return res.status(400).json(userLunch);
+        
       
-  } catch (error) {
+  }} catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
