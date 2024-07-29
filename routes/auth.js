@@ -3,29 +3,50 @@ const auth = express.Router();
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const { usersM } = require("../models/usersM");
-const {
-  user_authenticator,
-  key_authenticator,
-} = require("../middlewares/user_authenticator");
+const { key_authenticator } = require("../middlewares/user_authenticator");
+const { body, validationResult } = require("express-validator");
 
-auth.post("/login", user_authenticator, async (req, res) => {
-  user = req.user;
-  const token = uuidv4();
-  const tokenExpiration = new Date(Date.now() + 3600000);
+auth.post(
+  "/login",
+  [
+    body("email").isEmail().withMessage("please use correct email address"),
+    body("password").notEmpty().withMessage("Enter Password"),
+  ],
 
-  try {
-    await usersM.update(
-      { access_key: token, expire_time: tokenExpiration },
-      { where: { id: user.id } }
-    );
-  } catch (err) {
-    console.log(err);
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password } = req.body;
+    const user = await usersM.findOne({ where: { email: email } });
+    if (!user) {
+      res.status(401).send("no user with this email found");
+    }
+
+    const match_pass = await bcrypt.compare(password, user.password);
+    if (!match_pass) {
+      res.status(401).send({ message: "Incorrect password." });
+    }
+
+    const token = uuidv4();
+    const tokenExpiration = new Date(Date.now() + 3600000);
+
+    try {
+      await usersM.update(
+        { access_key: token, expire_time: tokenExpiration },
+        { where: { id: user.id } }
+      );
+    } catch (err) {
+      console.log(err);
+    }
+    return res.status(200).json({
+      name: user.full_name,
+      user_token: token,
+    });
   }
-  return res.status(200).json({
-    name: user.full_name,
-    user_token: token,
-  });
-});
+);
 
 // this route is the homepage, only gives that user details ( for check purpose )
 auth.get("/success", key_authenticator, async (req, res) => {

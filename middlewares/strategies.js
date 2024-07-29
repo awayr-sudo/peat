@@ -1,34 +1,6 @@
-const LocalStrategy = require("passport-local").Strategy;
 const BearerStrategy = require("passport-http-bearer").Strategy;
 const { usersM } = require("../models/usersM");
-const bcrypt = require("bcryptjs");
 const passport = require("passport");
-
-// Local DB Username and Password Strategy
-passport.use(
-  "validation",
-  new LocalStrategy(
-    { usernameField: "email", passwordField: "password" },
-    async (email, password, done) => {
-      try {
-        console.log(email + " " + password);
-        const user = await usersM.findOne({ where: { email: email } });
-        if (!user) {
-          return done(null, false, {
-            message: "Incorrect email address.",
-          });
-        }
-        const match_pass = await bcrypt.compare(password, user.password);
-        if (!match_pass) {
-          return done(null, false, { message: "Incorrect password." });
-        }
-        return done(null, user);
-      } catch (err) {
-        return done(err);
-      }
-    }
-  )
-);
 
 // Bearer token strategy to check users when they use get requests
 passport.use(
