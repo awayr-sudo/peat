@@ -6,10 +6,10 @@ const user = express.Router();
 const passport = require("passport");
 const AttendanceM = require("../models/attendanceM");
 const BreaksM = require("../models/breaksM");
-const { key_authenticator } = require("../middlewares/user_authenticator");
+const { keyAuthenticator } = require("../middlewares/key_authenticator");
 
 //User Check-in
-user.post("/checkin", key_authenticator, async (req, res, next) => {
+user.post("/checkin", keyAuthenticator, async (req, res, next) => {
   const user = req.user;
 
   try {
@@ -33,7 +33,7 @@ user.post("/checkin", key_authenticator, async (req, res, next) => {
 });
 
 //User Check-Out
-user.post("/checkout", key_authenticator, async (req, res, next) => {
+user.post("/checkout", keyAuthenticator, async (req, res, next) => {
   const user = req.user;
   try {
     const attendance = await AttendanceM.findOne({
@@ -61,25 +61,21 @@ user.post("/checkout", key_authenticator, async (req, res, next) => {
 });
 
 //Start Break
-user.post("/startbreak", key_authenticator, async (req, res, next) => {
+user.post("/startbreak", keyAuthenticator, async (req, res, next) => {
   const user = req.user;
   try {
     const userLunch = await AttendanceM.findOne({
       where: {
         user_id: user.id,
-        lunch_start: null
+        lunch_start: null,
       },
     });
-    if (userLunch){
-  
-        userLunch.update({
-          lunch_start: new Date()
-        })
-        return res.status(201).json(userLunch);
-      
-     
-    }
-    else{
+    if (userLunch) {
+      userLunch.update({
+        lunch_start: new Date(),
+      });
+      return res.status(201).json(userLunch);
+    } else {
       return res
         .status(201)
         .json({ message: "You are already on lunch break" });
@@ -90,27 +86,24 @@ user.post("/startbreak", key_authenticator, async (req, res, next) => {
 });
 
 //End Break
-user.post("/endbreak", key_authenticator, async (req, res, next) => {
+user.post("/endbreak", keyAuthenticator, async (req, res, next) => {
   const user = req.user;
   try {
     const userLunch = await AttendanceM.findOne({
       where: { user_id: user.id, lunch_end: null },
     });
-   
 
-      if (!userLunch) {
-        return res
-          .status(400)
-          .json({ error: "No active lunch break found for this user" });
-      } else
-       {
-        userLunch.update({
-          lunch_end: new Date()
-        })
-        return res.status(201).json(userLunch);
-        
-      
-  }} catch (error) {
+    if (!userLunch) {
+      return res
+        .status(400)
+        .json({ error: "No active lunch break found for this user" });
+    } else {
+      userLunch.update({
+        lunch_end: new Date(),
+      });
+      return res.status(201).json(userLunch);
+    }
+  } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });

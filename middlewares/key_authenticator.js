@@ -1,19 +1,6 @@
 const passport = require("passport");
 
-const user_authenticator = (req, res, next) => {
-  passport.authenticate("validation", async (err, user, info) => {
-    if (err) {
-      return res.status(500).send("Error During Authentication" + err);
-    }
-    if (!user) {
-      return res.status(401).json(info);
-    }
-    req.user = user;
-    next();
-  })(req, res, next);
-};
-
-const key_authenticator = (req, res, next) => {
+const keyAuthenticator = (req, res, next) => {
   passport.authenticate(
     "bearer",
     { session: false },
@@ -42,4 +29,4 @@ const key_authenticator = (req, res, next) => {
   )(req, res, next);
 };
 
-module.exports = { user_authenticator, key_authenticator };
+module.exports = { keyAuthenticator };

@@ -3,13 +3,27 @@ const { dbCon } = require("../db/db");
 const { usersM } = require("./usersM");
 
 const projectsM = dbCon.define(
-  "Projects",
+  "projects",
   {
+    // name does not allow null
+    // created_by does not allow null
+    // owned_by does not allow null
+    // status allows null
+    // budget allows null
+    // priority allows null
+    // progress allows null
+    // attachments allows null
+    // description allows null
+    // type does not allow null
+    // start_date allows null
+    // end_date allows null
+    // deadline allows null
+
     name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    user_id: {
+    created_by: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -17,41 +31,69 @@ const projectsM = dbCon.define(
         key: "id",
       },
     },
-    user_type: {
+    owned_by: {
       type: DataTypes.STRING,
       allowNull: false,
     },
     status: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: "Not Set",
+      type: DataTypes.ENUM,
+      allowNull: true,
+      values: [0, 1],
+      defaultValue: "0",
     },
-    edited_by: {
+    budget: {
+      type: DataTypes.DECIMAL,
+      allowNull: true,
+    },
+    priority: {
+      type: DataTypes.ENUM,
+      values: ["low", "medium", "high"],
+      allowNull: true,
+      defaultValue: "low",
+    },
+    progress: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      references: {
-        model: usersM,
-        key: "id",
-      },
+      defaultValue: 0,
     },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+    attachments: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
-    updated_at: {
+    description: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    type: {
+      type: DataTypes.ENUM,
+      values: ["internal", "external", "client"],
+      allowNull: false,
+    },
+    start_date: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+      allowNull: true,
+    },
+    end_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    deadline: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
-  { timestamps: false }
+  {
+    underscored: true,
+    timestamps: true,
+  }
 );
 
 projectsM.belongsTo(usersM, {
-  foreignKey: "user_id",
+  foreignKey: "created_by",
 });
 
 usersM.hasMany(projectsM, {
-  foreignKey: "user_id",
+  foreignKey: "created_by",
 });
 
 projectsM

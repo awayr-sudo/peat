@@ -3,7 +3,7 @@ const { dbCon } = require("../db/db");
 const { usersM } = require("./usersM");
 const { projectsM } = require("./projectsM");
 
-const Projects_Assigned = dbCon.define("project_assigned", {
+const ProjectMembersM = dbCon.define("project_members", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -25,6 +25,7 @@ const Projects_Assigned = dbCon.define("project_assigned", {
       key: "id",
     },
   },
+  // user type which was assigned or added in the project
   user_type: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -32,16 +33,16 @@ const Projects_Assigned = dbCon.define("project_assigned", {
 });
 
 projectsM.belongsToMany(usersM, {
-  through: Projects_Assigned,
+  through: ProjectMembersM,
   foreignKey: "project_id",
 });
 usersM.belongsToMany(projectsM, {
-  through: Projects_Assigned,
+  through: ProjectMembersM,
   foreignKey: "user_id",
 });
 
-Projects_Assigned.sync({ alter: true })
-  .then(() => console.log("Projects_Assigned table synced"))
-  .catch((err) => console.log("Error syncing Projects_Assigned table", err));
+ProjectMembersM.sync({ alter: true })
+  .then(() => console.log("ProjectMembersM table synced"))
+  .catch((err) => console.log("Error syncing ProjectMembersM table", err));
 
-module.exports = { Projects_Assigned };
+module.exports = { ProjectMembersM };

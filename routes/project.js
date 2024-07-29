@@ -1,35 +1,17 @@
 const express = require("express");
 const projects = express.Router();
 const { projectsM } = require("../models/projectsM");
-const { Projects_Assigned } = require("../models/projectAssignedM");
+const { ProjectMembersM } = require("../models/project.membersM");
 const { usersM } = require("../models/usersM");
-const { key_authenticator } = require("../middlewares/user_authenticator");
+const { keyAuthenticator } = require("../middlewares/key_authenticator");
+const { body, validationResult } = require("express-validator");
 
-projects.get("/projects", key_authenticator, async (req, res, next) => {
-  /* 
-        if (user.role === "manager") {
-          const user_projects = await user.getProjects();
-          return res.json({
-            message: "Welcome, " + user.full_name,
-            projects: user_projects,
-          });
-        }
-
-        if (user.role === "employee") {
-          const assigned_projects = await Projects_Assigned.findAll({
-            where: { user_id: user.id },
-          });
-          return res.json({
-            message: "Welcome, " + user.full_name,
-            projects: assigned_projects,
-          });
-        }
-         */
+projects.get("/projects", keyAuthenticator, async (req, res, next) => {
   const user = req.user;
 
   try {
     const user_projects = await user.getProjects();
-    const assigned_projects = await Projects_Assigned.findAll({
+    const assigned_projects = await ProjectMembersM.findAll({
       where: {
         user_id: user.id,
       },
@@ -44,24 +26,58 @@ projects.get("/projects", key_authenticator, async (req, res, next) => {
   }
 });
 
-projects.post("/project/add", key_authenticator, async (req, res, next) => {
-  const user = req.user;
-  try {
-    await projectsM.create({
-      name: req.body.name,
-      user_id: user.id,
-      user_type: user.role,
-    });
-    // const user_projects = await user.getProjects();    // getting the projects this user has
-    // res.status(200).json({ message: user_projects });
-    return res.status(201).json({ message: "project was added" });
-  } catch (error) {
-    console.error("Error creating project:", error);
-    return res.status(500).send("Error creating project");
-  }
-});
+projects.post(
+  "/project/add",
+  [
+    body("name").notEmpty().withMessage("enter project name"),
+    body("owned_by").notEmpty().withMessage("enter who own the project"),
+    body("type")
+      .notEmpty()
+      .withMessage(
+        "enter project type, is it internal, external or a client project"
+      ),
+  ],
+  keyAuthenticator,
+  async (req, res, next) => {
+    const user = req.user;
+    const {
+      name,
+      created_by,
+      owned_by,
+      status,
+      budget,
+      priority,
+      progress,
+      attachments,
+      description,
+      type,
+      start_date,
+      end_date,
+      deadline,
+    } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-projects.post("/project/edit", key_authenticator, (req, res, next) => {
+    try {
+      await projectsM.create({
+        name: name,
+        created_by: user.id,
+        owned_by: owned_by,
+        type: type,
+      });
+      // const user_projects = await user.getProjects();    // getting the projects this user has
+      // res.status(200).json({ message: user_projects });
+      return res.status(201).json({ message: "project was added" });
+    } catch (error) {
+      console.error("Error creating project:", error);
+      return res.status(500).send("Error creating project");
+    }
+  }
+);
+
+projects.post("/project/edit", keyAuthenticator, (req, res, next) => {
   const user = req.user;
   const { id, name } = req.body;
 
@@ -76,29 +92,25 @@ projects.post("/project/edit", key_authenticator, (req, res, next) => {
     });
 });
 
-projects.delete(
-  "/project/delete",
-  key_authenticator,
-  async (req, res, next) => {
-    const { id } = req.body;
+projects.delete("/project/delete", keyAuthenticator, async (req, res, next) => {
+  const { id } = req.body;
 
-    projectsM
-      .destroy({ where: { id: id } })
-      .then((done) => {
-        if (done) {
-          return res.status(200).send("Project Deleted");
-        } else {
-          return res.status(404).send("Project not found");
-        }
-      })
-      .catch((error) => {
-        console.error("Error deleting project:", error);
-        return res.status(500).send("Error deleting project");
-      });
-  }
-);
+  projectsM
+    .destroy({ where: { id: id } })
+    .then((done) => {
+      if (done) {
+        return res.status(200).send("Project Deleted");
+      } else {
+        return res.status(404).send("Project not found");
+      }
+    })
+    .catch((error) => {
+      console.error("Error deleting project:", error);
+      return res.status(500).send("Error deleting project");
+    });
+});
 
-projects.post("/project/status", key_authenticator, async (req, res, next) => {
+projects.post("/project/status", keyAuthenticator, async (req, res, next) => {
   const { status, id } = req.body;
   console.log(id);
 
@@ -119,7 +131,7 @@ projects.post("/project/status", key_authenticator, async (req, res, next) => {
   }
 });
 
-projects.post("/project/assign", key_authenticator, async (req, res, next) => {
+projects.post("/project/assign", keyAuthenticator, async (req, res, next) => {
   const { id, userId } = req.body;
   console.log(userId + " " + id);
   const getProject = await projectsM.findOne({
@@ -128,10 +140,10 @@ projects.post("/project/assign", key_authenticator, async (req, res, next) => {
   const getUser = await usersM.findOne({ where: { id: userId } });
 
   try {
-    Projects_Assigned.create({
+    ProjectMembersM.create({
       project_id: getProject.id,
       user_id: getUser.id,
-      user_type: getUser.role,
+      owned_by: getUser.role,
     }).then(() => {
       return res.status(200).send("User Assigned");
     });
