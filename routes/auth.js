@@ -3,16 +3,16 @@ const auth = express.Router();
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const { usersM } = require("../models/usersM");
-<<<<<<< Updated upstream
+// <<<<<<< Updated upstream
 const { keyAuthenticator } = require("../middlewares/key_authenticator");
 const { body, validationResult } = require("express-validator");
-=======
+// =======
 const {
   user_authenticator,
   key_authenticator,
 } = require("../middlewares/user_authenticator");
 const { contact_detailsM } = require("../models/contactdetailsM");
->>>>>>> Stashed changes
+// >>>>>>> Stashed changes
 
 auth.post(
   "/login",
@@ -62,7 +62,7 @@ auth.get("/success", keyAuthenticator, async (req, res) => {
   res.status(400).json({ message: { user } });
 });
 
-<<<<<<< Updated upstream
+// <<<<<<< Updated upstream
 auth.post(
   "/register",
   [
@@ -105,7 +105,7 @@ auth.post(
     });
   }
 );
-=======
+// =======
 auth.post("/register", async (req, res) => {
   const {
     username,
@@ -171,7 +171,7 @@ const hello = JSON.parse(phone_number)
     message: `hello ${username} with '${password}' password and role of ${role} and secret key ${forgotCode}`,
   });
 });
->>>>>>> Stashed changes
+//  Stashed changes
 
 auth.post(
   "/forgot",
