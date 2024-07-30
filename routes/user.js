@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const user = express.Router();
 const passport = require("passport");
 const AttendanceM = require("../models/attendanceM");
+const contact_detailsM= require("../models/contactdetailsM")
 const BreaksM = require("../models/breaksM");
 const { keyAuthenticator } = require("../middlewares/key_authenticator");
 
@@ -64,9 +65,10 @@ user.post("/checkout", keyAuthenticator, async (req, res, next) => {
 user.post("/startbreak", keyAuthenticator, async (req, res, next) => {
   const user = req.user;
   try {
-    const userLunch = await AttendanceM.findOne({
+    const userLunch = await BreaksM.findOne({
       where: {
         user_id: user.id,
+<<<<<<< Updated upstream
         lunch_start: null,
       },
     });
@@ -76,30 +78,51 @@ user.post("/startbreak", keyAuthenticator, async (req, res, next) => {
       });
       return res.status(201).json(userLunch);
     } else {
+=======
+        end_break: null,
+      },
+    });
+
+    if (userLunch) {
+>>>>>>> Stashed changes
       return res
-        .status(201)
+        .status(400)
         .json({ message: "You are already on lunch break" });
+    } else {
+      const userLunch = await BreaksM.create({
+        user_id: user.id,
+        start_break: new Date(),
+      });
+    return res.status(201).json(userLunch);
+      
     }
   } catch (error) {
     res.status(201).json({ error: error.message });
   }
 });
-
+ 
 //End Break
 user.post("/endbreak", keyAuthenticator, async (req, res, next) => {
   const user = req.user;
   try {
-    const userLunch = await AttendanceM.findOne({
-      where: { user_id: user.id, lunch_end: null },
+    const userLunch = await BreaksM.findOne({
+      where: { user_id: user.id, end_break: null },
     });
 
     if (!userLunch) {
       return res
         .status(400)
+<<<<<<< Updated upstream
         .json({ error: "No active lunch break found for this user" });
     } else {
       userLunch.update({
         lunch_end: new Date(),
+=======
+        .json({ error: "Lunch Break is Finished" });
+    } else {
+      userLunch.update({
+        end_break: new Date(),
+>>>>>>> Stashed changes
       });
       return res.status(201).json(userLunch);
     }

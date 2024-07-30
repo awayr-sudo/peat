@@ -21,14 +21,7 @@ const AttendanceM = dbCon.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    lunch_start: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-    lunch_end: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
+   
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

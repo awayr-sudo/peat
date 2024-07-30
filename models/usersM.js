@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { dbCon } = require("../db/db");
+// const {contactdetailsM}= require("../models/contactdetailsM")
 
 const usersM = dbCon.define(
   "users",
@@ -28,6 +29,14 @@ const usersM = dbCon.define(
     access_key: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    phone_number: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    house_address: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     expire_time: {
       type: DataTypes.DATE,
