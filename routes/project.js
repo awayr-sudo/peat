@@ -6,7 +6,24 @@ const { usersM } = require("../models/usersM");
 const { keyAuthenticator } = require("../middlewares/key.authenticator");
 const { body, validationResult } = require("express-validator");
 
-projects.get("/projects", keyAuthenticator, async (req, res, next) => {
+// not allow null
+// name does not allow null
+// created_by does not allow null
+// owned_by does not allow null
+// type does not allow null
+
+// allow null
+// status allows null
+// budget allows null
+// priority allows null
+// progress allows null
+// start_date allows null
+// end_date allows null
+// deadline allows null
+// attachments allows null
+// description allows null
+
+projects.get("/projects", keyAuthenticator, async (req, res) => {
   const user = req.user;
 
   try {
@@ -22,7 +39,9 @@ projects.get("/projects", keyAuthenticator, async (req, res, next) => {
       projects: user_projects,
     });
   } catch (error) {
-    return console.error(error);
+    return res.status(500).json({
+      error: error,
+    });
   }
 });
 
@@ -38,11 +57,10 @@ projects.post(
       ),
   ],
   keyAuthenticator,
-  async (req, res, next) => {
+  async (req, res) => {
     const user = req.user;
     const {
       name,
-      created_by,
       owned_by,
       status,
       budget,
@@ -66,90 +84,167 @@ projects.post(
         created_by: user.id,
         owned_by: owned_by,
         type: type,
+        status: status,
+        budget: budget,
+        priority: priority,
+        progress: progress,
+        attachments: attachments,
+        description: description,
+        start_date: start_date,
+        end_date: end_date,
+        deadline: deadline,
+
+
       });
       // const user_projects = await user.getProjects();    // getting the projects this user has
       // res.status(200).json({ message: user_projects });
       return res.status(201).json({ message: "project was added" });
     } catch (error) {
-      console.error("Error creating project:", error);
-      return res.status(500).send("Error creating project");
+      return res.status(500).json({
+        message: "Error creating project",
+        error: error,
+      });
     }
   }
 );
 
-projects.post("/project/edit", keyAuthenticator, (req, res, next) => {
-  const user = req.user;
-  const { id, name } = req.body;
+projects.post(
+  "/project/edit",
+  [body("id").notEmpty().withMessage("please provide the project id")],
+  keyAuthenticator,
+  (req, res) => {
+    // const user = req.user;
+    const { id, name } = req.body;
 
-  projectsM
-    .update({ name: name, edited_by: user.id }, { where: { id: id } })
-    .then(() => {
-      return res.status(200).send("Project Updated");
-    })
-    .catch((error) => {
-      console.error("Error updating project:", error);
-      return res.status(500).send("Error updating project");
-    });
-});
+    const {
+      // created_by,
+      // owned_by,
+      status,
+      budget,
+      priority,
+      progress,
+      attachments,
+      description,
+      type,
+      start_date,
+      end_date,
+      deadline,
+    } = req.body;
 
-projects.delete("/project/delete", keyAuthenticator, async (req, res, next) => {
-  const { id } = req.body;
-
-  projectsM
-    .destroy({ where: { id: id } })
-    .then((done) => {
-      if (done) {
-        return res.status(200).send("Project Deleted");
-      } else {
-        return res.status(404).send("Project not found");
-      }
-    })
-    .catch((error) => {
-      console.error("Error deleting project:", error);
-      return res.status(500).send("Error deleting project");
-    });
-});
-
-projects.post("/project/status", keyAuthenticator, async (req, res, next) => {
-  const { status, id } = req.body;
-  console.log(id);
-
-  const project = await projectsM.findOne({
-    where: { id: id },
-  });
-
-  try {
-    project
-      .update({
-        status: status,
-      })
+    projectsM
+      .update(
+        {
+          name,
+          // created_by,
+          // owned_by,
+          status,
+          budget,
+          priority,
+          progress,
+          attachments,
+          description,
+          type,
+          start_date,
+          end_date,
+          deadline,
+        },
+        { where: { id } }
+      )
       .then(() => {
-        return res.status(200).send("Status Changed to " + status);
+        return res.status(200).json({ message: "Project Updated" });
+      })
+      .catch((error) => {
+        return res
+          .status(500)
+          .json({ message: "Error updating project", error: error });
       });
-  } catch (error) {
-    res.status(500).send("Error Changing the status");
   }
-});
+);
 
-projects.post("/project/assign", keyAuthenticator, async (req, res, next) => {
-  const { id, userId } = req.body;
-  console.log(userId + " " + id);
-  const getProject = await projectsM.findOne({
-    where: { id: id },
-  });
-  const getUser = await usersM.findOne({ where: { id: userId } });
+projects.delete(
+  "/project/delete",
+  body("id").notEmpty().withMessage("please provide the project id"),
+  keyAuthenticator,
+  async (req, res) => {
+    const { id } = req.body;
 
-  try {
-    ProjectMembersM.create({
-      project_id: getProject.id,
-      user_id: getUser.id,
-      owned_by: getUser.role,
-    }).then(() => {
-      return res.status(200).send("User Assigned");
+    projectsM
+      .destroy({ where: { id: id } })
+      .then((done) => {
+        if (done) {
+          return res.status(200).send("Project Deleted");
+        } else {
+          return res.status(404).send("Project not found");
+        }
+      })
+      .catch((error) => {
+        return res
+          .status(500)
+          .json({ message: "Error deleting project", error: error });
+      });
+  }
+);
+
+projects.post(
+  "/project/status",
+
+  body("id").notEmpty().withMessage("please provide the project id"),
+  body("status").notEmpty().withMessage("please provide the project status"),
+  keyAuthenticator,
+  async (req, res) => {
+    const { status, id } = req.body;
+    console.log(id);
+
+    const project = await projectsM.findOne({
+      where: { id: id },
     });
-  } catch (error) {
-    res.status(500).send("Assigning User to Project Error");
+
+    try {
+      project
+        .update({
+          status: status,
+        })
+        .then(() => {
+          return res.status(200).send("Status Changed to " + status);
+        });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Error Changing the status", error: error });
+    }
   }
-});
+);
+
+projects.post(
+  "/project/assign",
+  body("id").notEmpty().withMessage("please provide the project id"),
+
+  body("userId").notEmpty().withMessage("please provide the user Id"),
+
+  keyAuthenticator,
+  async (req, res) => {
+    const { id, userId } = req.body;
+    console.log(userId + " " + id);
+    const getProject = await projectsM.findOne({
+      where: { id: id },
+    });
+    const getUser = await usersM.findOne({ where: { id: userId } });
+
+    try {
+      await ProjectMembersM.create({
+        project_id: getProject.id,
+        user_id: getUser.id,
+        user_type: getUser.role,
+      }).then(() => {
+        return res.status(200).send("User Assigned");
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Assigning User to Project Error",
+        error: error,
+      });
+    }
+  }
+);
 
 module.exports = projects;

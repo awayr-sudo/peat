@@ -1,13 +1,11 @@
 const express = require("express");
-const { usersM } = require("../models/usersM");
 const user = express.Router();
 const AttendanceM = require("../models/attendanceM");
-const contact_detailsM = require("../models/contactdetailsM");
 const BreaksM = require("../models/breaksM");
 const { keyAuthenticator } = require("../middlewares/key.authenticator");
 
 //User Check-in
-user.post("/checkin", keyAuthenticator, async (req, res, next) => {
+user.post("/checkin", keyAuthenticator, async (req, res) => {
   const user = req.user;
 
   try {
@@ -31,7 +29,7 @@ user.post("/checkin", keyAuthenticator, async (req, res, next) => {
 });
 
 //User Check-Out
-user.post("/checkout", keyAuthenticator, async (req, res, next) => {
+user.post("/checkout", keyAuthenticator, async (req, res) => {
   const user = req.user;
   try {
     const attendance = await AttendanceM.findOne({
@@ -59,26 +57,36 @@ user.post("/checkout", keyAuthenticator, async (req, res, next) => {
 });
 
 //Start Break
-user.post("/startbreak", keyAuthenticator, async (req, res, next) => {
+user.post("/startbreak", keyAuthenticator, async (req, res) => {
   const user = req.user;
   try {
-    const userLunch = await BreaksM.findOne({
+    const userCheckIn = await AttendanceM.findOne({
       where: {
         user_id: user.id,
-        end_break: null,
+        check_out: null,
       },
     });
 
-    if (userLunch) {
-      return res
-        .status(400)
-        .json({ message: "You are already on lunch break" });
-    } else {
-      const userLunch = await BreaksM.create({
-        user_id: user.id,
-        start_break: new Date(),
+    if (userCheckIn !== null) {
+      const userLunch = await BreaksM.findOne({
+        where: {
+          user_id: user.id,
+          end_break: null,
+        },
       });
-      return res.status(201).json(userLunch);
+      if (userLunch) {
+        return res
+          .status(400)
+          .json({ message: "You are already on lunch break" });
+      } else {
+        const userLunch = await BreaksM.create({
+          user_id: user.id,
+          start_break: new Date(),
+        });
+        return res.status(201).json(userLunch);
+      }
+    } else {
+      return res.status(401).send("you are not checked in to have a break");
     }
   } catch (error) {
     res.status(201).json({ error: error.message });
@@ -86,20 +94,31 @@ user.post("/startbreak", keyAuthenticator, async (req, res, next) => {
 });
 
 //End Break
-user.post("/endbreak", keyAuthenticator, async (req, res, next) => {
+user.post("/endbreak", keyAuthenticator, async (req, res) => {
   const user = req.user;
   try {
-    const userLunch = await BreaksM.findOne({
-      where: { user_id: user.id, end_break: null },
+    const userCheckIn = await AttendanceM.findOne({
+      where: {
+        user_id: user.id,
+        check_out: null,
+      },
     });
 
-    if (!userLunch) {
-      return res.status(400).json({ error: "Lunch Break is Finished" });
-    } else {
-      userLunch.update({
-        end_break: new Date(),
+    if (userCheckIn !== null) {
+      const userLunch = await BreaksM.findOne({
+        where: { user_id: user.id, end_break: null },
       });
-      return res.status(201).json(userLunch);
+
+      if (!userLunch) {
+        return res.status(400).json({ error: "No break started" });
+      } else {
+        userLunch.update({
+          end_break: new Date(),
+        });
+        return res.status(201).json(userLunch);
+      }
+    } else {
+      return res.status(401).send("you are not checked in to have a break");
     }
   } catch (error) {
     res.status(400).json({ error: error.message });

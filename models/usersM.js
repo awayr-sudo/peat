@@ -30,13 +30,21 @@ const usersM = dbCon.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    phone_number: {
+    primary_number: {
       type: DataTypes.BIGINT,
       allowNull: false,
     },
-    house_address: {
+    secondary_number: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+    },
+    primary_address: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    secondary_address: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     expire_time: {
       type: DataTypes.DATE,

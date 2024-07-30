@@ -5,7 +5,6 @@ const { v4: uuidv4 } = require("uuid");
 const { usersM } = require("../models/usersM");
 const { keyAuthenticator } = require("../middlewares/key.authenticator");
 const { body, validationResult } = require("express-validator");
-const { contact_detailsM } = require("../models/contactdetailsM");
 
 auth.post(
   "/login",
@@ -40,7 +39,10 @@ auth.post(
         { where: { id: user.id } }
       );
     } catch (err) {
-      console.log(err);
+      return res.status(500).json({
+        message: "Error logging in",
+        error: err,
+      });
     }
     return res.status(200).json({
       name: user.full_name,
@@ -66,6 +68,8 @@ auth.post(
     body("password").notEmpty().withMessage("Enter Password"),
     body("role").notEmpty().withMessage("Enter Role"),
     body("forgotCode").notEmpty().withMessage("Enter Forgot Code"),
+    body("primaryNumber").notEmpty().withMessage("Enter primary phone number"),
+    body("primaryAddress").notEmpty().withMessage("Enter primary address"),
   ],
 
   async (req, res) => {
@@ -80,8 +84,10 @@ auth.post(
       password,
       role,
       forgotCode,
-      phoneNumber,
-      houseAddress,
+      primaryNumber,
+      secondaryNumber,
+      primaryAddress,
+      secondaryAddress,
     } = req.body;
     // return res.status(200).json(parseInt(phoneNumber, 10));
 
@@ -98,8 +104,10 @@ auth.post(
         password: hashPass,
         role: role,
         forget_code: forgotCode,
-        phone_number: parseInt(phoneNumber, 10),
-        house_address: houseAddress,
+        primary_number: parseInt(primaryNumber, 10),
+        secondary_number: parseInt(secondaryNumber, 10),
+        primary_address: primaryAddress,
+        secondary_address: secondaryAddress,
       });
       return res.status(200).json({
         message: `user '${username}' created`,
