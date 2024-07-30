@@ -3,7 +3,7 @@ const projects = express.Router();
 const { projectsM } = require("../models/projectsM");
 const { ProjectMembersM } = require("../models/project.membersM");
 const { usersM } = require("../models/usersM");
-const { keyAuthenticator } = require("../middlewares/key_authenticator");
+const { keyAuthenticator } = require("../middlewares/key.authenticator");
 const { body, validationResult } = require("express-validator");
 
 projects.get("/projects", keyAuthenticator, async (req, res, next) => {

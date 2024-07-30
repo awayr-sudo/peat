@@ -24,14 +24,14 @@ const usersM = dbCon.define(
     },
     forget_code: {
       type: DataTypes.STRING,
-      allowNull: true, 
+      allowNull: true,
     },
     access_key: {
       type: DataTypes.STRING,
       allowNull: true,
     },
     phone_number: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false,
     },
     house_address: {

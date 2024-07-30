@@ -1,6 +1,6 @@
 const { Sequelize } = require("sequelize");
 
-const dbCon = new Sequelize("gitdb", "root", "Baig27688", {
+const dbCon = new Sequelize("mydb", "root", "root", {
   host: "localhost",
   dialect: "mysql",
 });

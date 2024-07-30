@@ -3,16 +3,9 @@ const auth = express.Router();
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const { usersM } = require("../models/usersM");
-// <<<<<<< Updated upstream
-const { keyAuthenticator } = require("../middlewares/key_authenticator");
+const { keyAuthenticator } = require("../middlewares/key.authenticator");
 const { body, validationResult } = require("express-validator");
-// =======
-const {
-  user_authenticator,
-  key_authenticator,
-} = require("../middlewares/user_authenticator");
 const { contact_detailsM } = require("../models/contactdetailsM");
-// >>>>>>> Stashed changes
 
 auth.post(
   "/login",
@@ -62,7 +55,6 @@ auth.get("/success", keyAuthenticator, async (req, res) => {
   res.status(400).json({ message: { user } });
 });
 
-// <<<<<<< Updated upstream
 auth.post(
   "/register",
   [
@@ -82,7 +74,17 @@ auth.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, email, password, role, forgotCode } = req.body;
+    const {
+      username,
+      email,
+      password,
+      role,
+      forgotCode,
+      phoneNumber,
+      houseAddress,
+    } = req.body;
+    // return res.status(200).json(parseInt(phoneNumber, 10));
+
     try {
       const user = await usersM.findOne({ where: { email: email } });
       if (user) {
@@ -96,82 +98,19 @@ auth.post(
         password: hashPass,
         role: role,
         forget_code: forgotCode,
+        phone_number: parseInt(phoneNumber, 10),
+        house_address: houseAddress,
+      });
+      return res.status(200).json({
+        message: `user '${username}' created`,
       });
     } catch (err) {
-      console.log(err);
+      return res.status(500).json({
+        message: "Error: " + err,
+      });
     }
-    return res.status(200).json({
-      message: `user '${username}' created`,
-    });
   }
 );
-// =======
-auth.post("/register", async (req, res) => {
-  const {
-    username,
-    email,
-    password,
-    role,
-    forgotCode,
-    phone_number,
-    house_address,
-  } = req.body;
-  if (
-    (username ||
-      email ||
-      password ||
-      role ||
-      forgotCode ||
-      phone_number ||
-      house_address) == undefined
-  ) {
-    return res.status(403).json({ message: "Please fill out all the fields" });
-  }
-  // try {
-    const hashPass = await bcrypt.hash(password, 10);
-    const user = await usersM.findOne({ where: { email: email } });
-    if (user) {
-      return res.send("user already exists");
-    }
-    
-const hello = JSON.parse(phone_number)
-
-    const cont = await usersM.create({
-      full_name: username,
-      email: email,
-      password: hashPass,
-      role: role,
-      forget_code: forgotCode,
-      phone_number:((hello)),
-      house_address:house_address,
-    });
-    
-    // const regUsers = await usersM.create({
-    //   full_name: username,
-    //   email: email,
-    //   password: hashPass,
-    //   role: role,
-    //   forget_code: forgotCode,
-    //   // phone_number:phone_number,
-    //   // house_address:house_address,
-    // });
-
-    // const contactUser = await contact_detailsM.create({
-    //   phone_number: phone_number,
-    //   house_address: house_address,
-    //   user_Id: regUsers.id
-    // });
-    return res.status(201).json(cont);
-    
-
-  // } catch (err) {
-  //   console.log(err);
-  // }
-  res.status(200).json({
-    message: `hello ${username} with '${password}' password and role of ${role} and secret key ${forgotCode}`,
-  });
-});
-//  Stashed changes
 
 auth.post(
   "/forgot",

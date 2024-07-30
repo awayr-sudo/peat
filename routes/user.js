@@ -1,13 +1,10 @@
 const express = require("express");
 const { usersM } = require("../models/usersM");
-const { Op } = require("sequelize");
-const bcrypt = require("bcryptjs");
 const user = express.Router();
-const passport = require("passport");
 const AttendanceM = require("../models/attendanceM");
-const contact_detailsM= require("../models/contactdetailsM")
+const contact_detailsM = require("../models/contactdetailsM");
 const BreaksM = require("../models/breaksM");
-const { keyAuthenticator } = require("../middlewares/key_authenticator");
+const { keyAuthenticator } = require("../middlewares/key.authenticator");
 
 //User Check-in
 user.post("/checkin", keyAuthenticator, async (req, res, next) => {
@@ -68,23 +65,11 @@ user.post("/startbreak", keyAuthenticator, async (req, res, next) => {
     const userLunch = await BreaksM.findOne({
       where: {
         user_id: user.id,
-<<<<<<< Updated upstream
-        lunch_start: null,
-      },
-    });
-    if (userLunch) {
-      userLunch.update({
-        lunch_start: new Date(),
-      });
-      return res.status(201).json(userLunch);
-    } else {
-=======
         end_break: null,
       },
     });
 
     if (userLunch) {
->>>>>>> Stashed changes
       return res
         .status(400)
         .json({ message: "You are already on lunch break" });
@@ -93,14 +78,13 @@ user.post("/startbreak", keyAuthenticator, async (req, res, next) => {
         user_id: user.id,
         start_break: new Date(),
       });
-    return res.status(201).json(userLunch);
-      
+      return res.status(201).json(userLunch);
     }
   } catch (error) {
     res.status(201).json({ error: error.message });
   }
 });
- 
+
 //End Break
 user.post("/endbreak", keyAuthenticator, async (req, res, next) => {
   const user = req.user;
@@ -110,19 +94,10 @@ user.post("/endbreak", keyAuthenticator, async (req, res, next) => {
     });
 
     if (!userLunch) {
-      return res
-        .status(400)
-<<<<<<< Updated upstream
-        .json({ error: "No active lunch break found for this user" });
-    } else {
-      userLunch.update({
-        lunch_end: new Date(),
-=======
-        .json({ error: "Lunch Break is Finished" });
+      return res.status(400).json({ error: "Lunch Break is Finished" });
     } else {
       userLunch.update({
         end_break: new Date(),
->>>>>>> Stashed changes
       });
       return res.status(201).json(userLunch);
     }
