@@ -2,23 +2,23 @@ const { DataTypes } = require("sequelize");
 const { dbCon } = require("../db/db");
 const { usersM } = require("./usersM");
 
+// name does not allow null
+// created_by does not allow null
+// owned_by does not allow null
+// status allows null
+// budget allows null
+// priority allows null
+// progress allows null
+// attachments allows null
+// description allows null
+// type does not allow null
+// start_date allows null
+// end_date allows null
+// deadline allows null
+
 const projectsM = dbCon.define(
   "projects",
   {
-    // name does not allow null
-    // created_by does not allow null
-    // owned_by does not allow null
-    // status allows null
-    // budget allows null
-    // priority allows null
-    // progress allows null
-    // attachments allows null
-    // description allows null
-    // type does not allow null
-    // start_date allows null
-    // end_date allows null
-    // deadline allows null
-
     name: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -38,7 +38,7 @@ const projectsM = dbCon.define(
     status: {
       type: DataTypes.ENUM,
       allowNull: true,
-      values: [0, 1],
+      values: ["0", "1"],
       defaultValue: "0",
     },
     budget: {
@@ -46,8 +46,7 @@ const projectsM = dbCon.define(
       allowNull: true,
     },
     priority: {
-      type: DataTypes.ENUM,
-      values: ["low", "medium", "high"],
+      type: DataTypes.ENUM("low", "medium", "high"),
       allowNull: true,
       defaultValue: "low",
     },
@@ -65,8 +64,7 @@ const projectsM = dbCon.define(
       allowNull: true,
     },
     type: {
-      type: DataTypes.ENUM,
-      values: ["internal", "external", "client"],
+      type: DataTypes.ENUM(["internal", "external", "client"]),
       allowNull: false,
     },
     start_date: {

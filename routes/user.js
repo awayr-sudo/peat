@@ -2,7 +2,10 @@ const express = require("express");
 const user = express.Router();
 const AttendanceM = require("../models/attendanceM");
 const BreaksM = require("../models/breaksM");
-const { keyAuthenticator } = require("../middlewares/key.authenticator");
+const {
+  keyAuthenticator,
+  checkInAuthenticator,
+} = require("../middlewares/authenticator");
 
 //User Check-in
 user.post("/checkin", keyAuthenticator, async (req, res) => {
@@ -29,45 +32,46 @@ user.post("/checkin", keyAuthenticator, async (req, res) => {
 });
 
 //User Check-Out
-user.post("/checkout", keyAuthenticator, async (req, res) => {
-  const user = req.user;
-  try {
-    const attendance = await AttendanceM.findOne({
-      where: {
-        user_id: user.id,
-        check_out: null,
-      },
-    });
+user.post(
+  "/checkout",
+  keyAuthenticator,
+  checkInAuthenticator,
+  async (req, res) => {
+    const user = req.user;
+    try {
+      const attendance = await AttendanceM.findOne({
+        where: {
+          user_id: user.id,
+          check_out: null,
+        },
+      });
 
-    if (attendance) {
-      attendance.check_out = new Date();
-      //check_out time shouldn't be before the check_in time
+      if (attendance) {
+        attendance.check_out = new Date();
+        //check_out time shouldn't be before the check_in time
 
-      if (attendance.check_out < attendance.check_in) {
-        return res.status(400).json({ error: "Please Check in first" });
+        if (attendance.check_out < attendance.check_in) {
+          return res.status(400).json({ error: "Please Check in first" });
+        }
+        (checkOutTime = attendance.check_out), await attendance.save();
+        res.json(attendance);
+      } else if (!attendance) {
+        res.status(404).json({ error: "No active check-in found for user" });
       }
-      (checkOutTime = attendance.check_out), await attendance.save();
-      res.json(attendance);
-    } else if (!attendance) {
-      res.status(404).json({ error: "No active check-in found for user" });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
-  } catch (error) {
-    res.status(400).json({ error: error.message });
   }
-});
+);
 
 //Start Break
-user.post("/startbreak", keyAuthenticator, async (req, res) => {
-  const user = req.user;
-  try {
-    const userCheckIn = await AttendanceM.findOne({
-      where: {
-        user_id: user.id,
-        check_out: null,
-      },
-    });
-
-    if (userCheckIn !== null) {
+user.post(
+  "/startbreak",
+  keyAuthenticator,
+  checkInAuthenticator,
+  async (req, res) => {
+    const user = req.user;
+    try {
       const userLunch = await BreaksM.findOne({
         where: {
           user_id: user.id,
@@ -85,44 +89,47 @@ user.post("/startbreak", keyAuthenticator, async (req, res) => {
         });
         return res.status(201).json(userLunch);
       }
-    } else {
-      return res.status(401).send("you are not checked in to have a break");
+    } catch (error) {
+      res.status(201).json({ error: error.message });
     }
-  } catch (error) {
-    res.status(201).json({ error: error.message });
   }
-});
+);
 
 //End Break
-user.post("/endbreak", keyAuthenticator, async (req, res) => {
-  const user = req.user;
-  try {
-    const userCheckIn = await AttendanceM.findOne({
-      where: {
-        user_id: user.id,
-        check_out: null,
-      },
-    });
-
-    if (userCheckIn !== null) {
-      const userLunch = await BreaksM.findOne({
-        where: { user_id: user.id, end_break: null },
+user.post(
+  "/endbreak",
+  keyAuthenticator,
+  checkInAuthenticator,
+  async (req, res) => {
+    const user = req.user;
+    try {
+      const userCheckIn = await AttendanceM.findOne({
+        where: {
+          user_id: user.id,
+          check_out: null,
+        },
       });
 
-      if (!userLunch) {
-        return res.status(400).json({ error: "No break started" });
-      } else {
-        userLunch.update({
-          end_break: new Date(),
+      if (userCheckIn !== null) {
+        const userLunch = await BreaksM.findOne({
+          where: { user_id: user.id, end_break: null },
         });
-        return res.status(201).json(userLunch);
+
+        if (!userLunch) {
+          return res.status(400).json({ error: "No break started" });
+        } else {
+          userLunch.update({
+            end_break: new Date(),
+          });
+          return res.status(201).json(userLunch);
+        }
+      } else {
+        return res.status(401).send("you are not checked in to have a break");
       }
-    } else {
-      return res.status(401).send("you are not checked in to have a break");
+    } catch (error) {
+      res.status(400).json({ error: error.message });
     }
-  } catch (error) {
-    res.status(400).json({ error: error.message });
   }
-});
+);
 
 module.exports = user;

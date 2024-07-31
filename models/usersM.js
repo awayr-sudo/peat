@@ -1,6 +1,5 @@
 const { DataTypes } = require("sequelize");
 const { dbCon } = require("../db/db");
-// const {contactdetailsM}= require("../models/contactdetailsM")
 
 const usersM = dbCon.define(
   "users",
@@ -12,7 +11,7 @@ const usersM = dbCon.define(
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true, // Add unique constraint to email
+      unique: true,
     },
     password: {
       type: DataTypes.STRING,

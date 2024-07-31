@@ -1,4 +1,5 @@
 const passport = require("passport");
+const AttendanceM = require("../models/attendanceM");
 
 const keyAuthenticator = (req, res, next) => {
   passport.authenticate(
@@ -29,4 +30,20 @@ const keyAuthenticator = (req, res, next) => {
   )(req, res, next);
 };
 
-module.exports = { keyAuthenticator };
+const checkInAuthenticator = async (req, res, next) => {
+  const userCheckIn = await AttendanceM.findOne({
+    where: {
+      user_id: req.user.id,
+      check_out: null,
+    },
+  });
+
+  if (userCheckIn !== null) {
+    next();
+  } else {
+    return res.status(401).send("you need to be checked in to do this action");
+  }
+  req, res, next;
+};
+
+module.exports = { keyAuthenticator, checkInAuthenticator };

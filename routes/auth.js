@@ -3,7 +3,10 @@ const auth = express.Router();
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const { usersM } = require("../models/usersM");
-const { keyAuthenticator } = require("../middlewares/key.authenticator");
+const {
+  keyAuthenticator,
+  checkInAuthenticator,
+} = require("../middlewares/authenticator");
 const { body, validationResult } = require("express-validator");
 
 auth.post(
@@ -52,10 +55,15 @@ auth.post(
 );
 
 // this route is the homepage, only gives that user details ( for check purpose )
-auth.get("/success", keyAuthenticator, async (req, res) => {
-  const user = req.user;
-  res.status(400).json({ message: { user } });
-});
+auth.get(
+  "/success",
+  keyAuthenticator,
+  checkInAuthenticator,
+  async (req, res) => {
+    const user = req.user;
+    res.status(400).json({ message: { user } });
+  }
+);
 
 auth.post(
   "/register",
@@ -89,7 +97,6 @@ auth.post(
       primaryAddress,
       secondaryAddress,
     } = req.body;
-    // return res.status(200).json(parseInt(phoneNumber, 10));
 
     try {
       const user = await usersM.findOne({ where: { email: email } });

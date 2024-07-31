@@ -21,7 +21,7 @@ const AttendanceM = dbCon.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-   
+
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
