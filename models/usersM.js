@@ -43,7 +43,7 @@ const usersM = dbCon.define(
     },
     secondary_address: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     expire_time: {
       type: DataTypes.DATE,

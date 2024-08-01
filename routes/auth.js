@@ -1,4 +1,5 @@
 const express = require("express");
+// const router= express.Router();
 const auth = express.Router();
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
@@ -156,5 +157,6 @@ auth.post(
     }
   }
 );
+module.exports= auth;
 
-module.exports = auth;
+// module.exports = router;
