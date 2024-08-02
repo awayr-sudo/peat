@@ -8,7 +8,8 @@ const {
   keyAuthenticator,
   checkInAuthenticator,
 } = require("../middlewares/authenticator");
-const { body, validationResult } = require("express-validator");
+const { body, validationResult, param } = require("express-validator");
+const { pendingDetailsM } = require("../models/pending.detalisM");
 
 auth.post(
   "/login",
@@ -26,12 +27,12 @@ auth.post(
     const { email, password } = req.body;
     const user = await usersM.findOne({ where: { email: email } });
     if (!user) {
-      res.status(401).send("no user with this email found");
+      return res.status(401).json({ message: "no user with this email found" });
     }
 
     const match_pass = await bcrypt.compare(password, user.password);
     if (!match_pass) {
-      res.status(401).send({ message: "Incorrect password." });
+      return res.status(401).json({ message: "Incorrect password." });
     }
 
     const token = uuidv4();
@@ -62,7 +63,7 @@ auth.get(
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
-    res.status(400).json({ message: { user } });
+    return res.status(400).json({ message: { user } });
   }
 );
 
@@ -102,7 +103,7 @@ auth.post(
     try {
       const user = await usersM.findOne({ where: { email: email } });
       if (user) {
-        return res.status(409).send("user already exists");
+        return res.status(409).json({ message: "user already exists" });
       }
 
       const hashPass = await bcrypt.hash(password, 10);
@@ -142,7 +143,9 @@ auth.post(
       const user = await usersM.findOne({ where: { email: email } });
 
       if (!user || user.forget_code !== forgotCode) {
-        return res.status(401).send("Invalid email or forgot code");
+        return res
+          .status(401)
+          .json({ message: "Invalid email or forgot code" });
       }
 
       const salt = 12;
@@ -150,14 +153,88 @@ auth.post(
 
       await usersM.update({ password: hashPass }, { where: { id: user.id } });
 
-      res.status(200).send("Password changed successfully");
+      return res.status(200).json({ message: "Password changed successfully" });
     } catch (error) {
       console.error("Error resetting password:", error);
-      res.status(500).send("Internal server error");
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+auth.post(
+  "/update-details",
+  keyAuthenticator,
+  checkInAuthenticator,
+  async (req, res) => {
+    user = req.user;
+    // const newDetails = req.body;
+
+    try {
+      await pendingDetailsM.create({
+        user_id: user.id,
+        new_details: req.body,
+        status: "pending",
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: err,
+      });
+    }
+    return res.status(200).json({
+      message: "peding request created",
+    });
+  }
+);
+
+auth.get(
+  "/pending-approvals",
+  keyAuthenticator,
+  checkInAuthenticator,
+  async (req, res) => {
+    const pendingApprovals = await pendingDetailsM.findAll();
+    return res.status(200).json({ pendingApprovals });
+  }
+);
+
+auth.post(
+  "/admin-approval/:id",
+  [param("id").isInt().withMessage("ID must be an integer")],
+  keyAuthenticator,
+  checkInAuthenticator,
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const pendingId = req.params.id;
+    const { action } = req.body;
+    try {
+      const pendingDetails = await pendingDetailsM.findOne({
+        where: { id: pendingId },
+      });
+
+      if (!pendingDetails) {
+        return res
+          .status(404)
+          .json({ message: "No pending request found with this id" });
+      }
+
+      if (action == "approve") {
+        const userDetails = await usersM.findByPk(pendingDetails.user_id);
+        await userDetails.update(pendingDetails.new_details);
+        await pendingDetails.update({ status: "approve" });
+        return res
+          .status(200)
+          .json({ message: "successfully updated the user details" });
+      }
+      if (action == "reject") {
+        await pendingDetailsM.update({ status: "rejected" });
+        res.status(200).json({ message: "Update request rejected" });
+      }
+    } catch (err) {
+      return res.status(500).json({ message: err });
     }
   }
 );
 
 module.exports = auth;
-
-// module.exports = router;

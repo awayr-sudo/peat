@@ -36,6 +36,7 @@ projectsM.belongsToMany(usersM, {
   through: ProjectMembersM,
   foreignKey: "project_id",
 });
+
 usersM.belongsToMany(projectsM, {
   through: ProjectMembersM,
   foreignKey: "user_id",
