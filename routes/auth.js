@@ -110,7 +110,7 @@ auth.post(
         full_name: username,
         email: email,
         password: hashPass,
-        role: role,
+        role: role.toLowerCase(),
         forget_code: forgotCode,
         primary_number: parseInt(primaryNumber, 10),
         secondary_number: parseInt(secondaryNumber, 10),
@@ -157,6 +157,7 @@ auth.post(
     }
   }
 );
-module.exports= auth;
+
+module.exports = auth;
 
 // module.exports = router;

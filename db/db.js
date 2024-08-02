@@ -1,9 +1,15 @@
 const { Sequelize } = require("sequelize");
+require("dotenv").config();
 
-const dbCon = new Sequelize("gitdb", "root", "Baig27688", {
-  host: "localhost",
-  dialect: "mysql",
-});
+const dbCon = new Sequelize(
+  process.env.DATABASE,
+  process.env.USER_NAME,
+  process.env.PASSWORD,
+  {
+    host: process.env.HOST,
+    dialect: process.env.DIALECT,
+  }
+);
 
 const dbConStatus = () => {
   dbCon

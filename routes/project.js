@@ -236,6 +236,17 @@ projects.post(
   async (req, res) => {
     const { id, userId } = req.body;
     console.log(userId + " " + id);
+
+    const alreadyExist = await ProjectMembersM.findOne({
+      where: {
+        project_id: id,
+        user_id: userId,
+      },
+    });
+    if (alreadyExist) {
+      return res.status(200).send("User is already assigned to this project");
+    }
+
     const getProject = await projectsM.findOne({
       where: { id: id },
     });
