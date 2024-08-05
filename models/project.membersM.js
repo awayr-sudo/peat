@@ -42,7 +42,7 @@ usersM.belongsToMany(projectsM, {
   foreignKey: "user_id",
 });
 
-ProjectMembersM.sync({ alter: true })
+ProjectMembersM.sync()
   .then(() => console.log("ProjectMembersM table synced"))
   .catch((err) => console.log("Error syncing ProjectMembersM table", err));
 

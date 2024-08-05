@@ -168,6 +168,8 @@ auth.post(
   async (req, res) => {
     user = req.user;
     // const newDetails = req.body;
+    req.body.password = await bcrypt.hash(req.body.password, 10);
+    delete req.body.email; // delete such entries which we don't want to be updated
 
     try {
       await pendingDetailsM.create({
@@ -181,18 +183,35 @@ auth.post(
       });
     }
     return res.status(200).json({
-      message: "peding request created",
+      message: "pending request created",
     });
   }
 );
 
+// for admin
 auth.get(
-  "/pending-approvals",
+  "/pending-requests",
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
+    var approveDetails = [];
+    var pendingDetails = [];
+    var disapproveDetails = [];
     const pendingApprovals = await pendingDetailsM.findAll();
-    return res.status(200).json({ pendingApprovals });
+    pendingApprovals.forEach((item) => {
+      if (item.status === "approve") {
+        approveDetails.push(item);
+      } else if (item.status === "pending") {
+        pendingDetails.push(item);
+      } else if (item.status === "disapprove") {
+        disapproveDetails.push(item);
+      }
+    });
+    return res.status(200).json({
+      approve: approveDetails,
+      pending: pendingDetails,
+      disapprove: disapproveDetails,
+    });
   }
 );
 
@@ -223,13 +242,16 @@ auth.post(
         const userDetails = await usersM.findByPk(pendingDetails.user_id);
         await userDetails.update(pendingDetails.new_details);
         await pendingDetails.update({ status: "approve" });
-        return res
-          .status(200)
-          .json({ message: "successfully updated the user details" });
+        return res.status(200).json({
+          message:
+            "Successfully updated the user details for " +
+            userDetails.full_name,
+        });
       }
-      if (action == "reject") {
-        await pendingDetailsM.update({ status: "rejected" });
-        res.status(200).json({ message: "Update request rejected" });
+      if (action == "disapprove") {
+        await pendingDetails.update({ status: "disapprove" });
+
+        res.status(200).json({ message: "Update request disapproved" });
       }
     } catch (err) {
       return res.status(500).json({ message: err });

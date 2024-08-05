@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { dbCon } = require("../db/db");
+const { usersM } = require("./usersM");
 
 const pendingDetailsM = dbCon.define(
   "pending_details",
@@ -7,13 +8,17 @@ const pendingDetailsM = dbCon.define(
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: usersM,
+        key: "id",
+      },
     },
     new_details: {
       type: DataTypes.JSON,
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM("pending", "approve", "reject"),
+      type: DataTypes.ENUM("pending", "approve", "disapprove"),
       defaultValue: "pending",
     },
   },
@@ -22,6 +27,9 @@ const pendingDetailsM = dbCon.define(
     underscored: true,
   }
 );
+
+pendingDetailsM.belongsTo(usersM, { foreignKey: "user_id" });
+usersM.hasMany(pendingDetailsM, { foreignKey: "user_id" });
 
 pendingDetailsM
   .sync({ alter: true })
