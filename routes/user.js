@@ -40,6 +40,21 @@ user.post(
   async (req, res) => {
     const user = req.user;
     try {
+      const isBreak = await BreaksM.findOne({
+        where: {
+          user_id: user.id,
+          end_break: null,
+        },
+      });
+
+      if (isBreak) {
+        return res
+          .status(400)
+          .json({
+            error: "You are on a break, end the break to checkout first",
+          });
+      }
+
       const attendance = await AttendanceM.findOne({
         where: {
           user_id: user.id,
