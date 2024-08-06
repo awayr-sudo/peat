@@ -25,6 +25,9 @@ const ProjectMembersM = dbCon.define("project_members", {
       key: "id",
     },
   },
+  
+
+
   // user type which was assigned or added in the project
   user_type: {
     type: DataTypes.STRING,

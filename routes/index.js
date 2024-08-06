@@ -1,16 +1,14 @@
 const express = require("express");
-const index = express.Router();
+const Index = express.Router();
 const Auth = require("./auth");
 const Projects = require("./project");
 const User = require("./user");
-const Report = require("./report")
+const Report = require("./report");
 
+Index.use(express.json()); // for parsing application/json
+Index.use("/", Auth);
+Index.use("/", Projects);
+Index.use("/", User);
+Index.use("/", Report);
 
-// Middleware setup (if needed)
- index.use(express.json()); // for parsing application/json
-index.use("/", Auth);
-index.use("/", Projects);
-index.use("/", User);
-index.use("/",Report)
-
-module.exports = index;
+module.exports = Index;
