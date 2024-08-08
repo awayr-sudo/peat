@@ -29,6 +29,10 @@ const usersM = dbCon.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    expire_time: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     primary_number: {
       type: DataTypes.BIGINT,
       allowNull: false,
@@ -45,9 +49,26 @@ const usersM = dbCon.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    expire_time: {
-      type: DataTypes.DATE,
-      allowNull: true,
+
+    emergency_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    emergency_email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    emergency_number: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    emergency_address: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    emergency_relationship: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
   },
   {
@@ -56,7 +77,7 @@ const usersM = dbCon.define(
 );
 
 usersM
-  .sync()
+  .sync({ alter: true })
   .then(() => console.log("Synced successfully"))
   .catch((error) => console.log("Could not sync the db:", error));
 

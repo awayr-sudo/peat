@@ -1,6 +1,7 @@
 node_modules
 checkDb.js
 db
+uploads
 
 # Logs
 logs

@@ -21,18 +21,10 @@ const AttendanceM = dbCon.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
   },
   {
-    timestamps: false,
+    timestamps: true,
+    underscored: true,
   }
 );
 

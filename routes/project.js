@@ -9,23 +9,23 @@ const {
   checkInAuthenticator,
 } = require("../middlewares/authenticator");
 const { body, validationResult } = require("express-validator");
+const { projectAttachmentsM } = require("../models/project.attachmentsM");
 
-// not allow null
-// name does not allow null
-// created_by does not allow null
-// owned_by does not allow null
-// type does not allow null
+const multer = require("multer");
+const storage = multer.diskStorage({
+  // this gives us full control of file storing
+  destination: (req, file, cb) => {
+    cb(null, "./uploads");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+const upload = multer({ storage: storage });
 
-// allow null
-// status allows null
-// budget allows null
-// priority allows null
-// progress allows null
-// start_date allows null
-// end_date allows null
-// deadline allows null
-// attachments allows null
-// description allows null
+projects.post("/testing", upload.single("file"), async (req, res) => {
+  return res.status(200).send(req.file.path);
+});
 
 projects.get(
   "/projects",
@@ -56,6 +56,7 @@ projects.get(
 
 projects.post(
   "/project/add",
+  upload.single("file"),
   [
     body("name").notEmpty().withMessage("enter project name"),
     body("owned_by").notEmpty().withMessage("enter who own the project"),
@@ -69,6 +70,10 @@ projects.post(
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
     const {
       name,
       owned_by,
@@ -76,34 +81,48 @@ projects.post(
       budget,
       priority,
       progress,
-      attachments,
+      file,
+      url,
       description,
-      type,
       start_date,
       end_date,
       deadline,
     } = req.body;
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+
+    const isExist = await projectsM.findOne({
+      where: {
+        name: name,
+      },
+    });
+
+    if (isExist) {
+      return res.status(409).json({ message: "Project already exists" });
     }
 
     try {
-      await projectsM.create({
+      const newProject = await projectsM.create({
         name: name,
         created_by: user.id,
         owned_by: owned_by,
-        type: type,
         status: status,
         budget: budget,
-        priority: priority,
         progress: progress,
-        attachments: attachments,
         description: description,
         start_date: start_date,
         end_date: end_date,
         deadline: deadline,
       });
+      try {
+        await projectAttachmentsM.create({
+          project_id: newProject.id,
+          url: url,
+          file: req.file.path,
+        });
+      } catch (err) {
+        return res.status(500).json({
+          message: "project attachment error: " + err,
+        });
+      }
       return res.status(201).json({ message: "project was added" });
     } catch (error) {
       return res.status(500).json({
@@ -116,11 +135,16 @@ projects.post(
 
 projects.post(
   "/project/edit",
+  upload.single("file"),
   [body("id").notEmpty().withMessage("please provide the project id")],
   keyAuthenticator,
   checkInAuthenticator,
-  (req, res) => {
+  async (req, res) => {
     // const user = req.user;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
 
     const {
       // created_by,
@@ -129,9 +153,9 @@ projects.post(
       name,
       status,
       budget,
-      priority,
       progress,
-      attachments,
+      url,
+      file,
       description,
       type,
       start_date,
@@ -139,33 +163,37 @@ projects.post(
       deadline,
     } = req.body;
 
-    projectsM
+    await projectsM.update(
+      {
+        name,
+        // created_by,
+        // owned_by,
+        status,
+        budget,
+        progress,
+        description,
+        start_date,
+        end_date,
+        deadline,
+      },
+      { where: { id } }
+    );
+
+    await projectAttachmentsM
       .update(
         {
-          name,
-          // created_by,
-          // owned_by,
-          status,
-          budget,
-          priority,
-          progress,
-          attachments,
-          description,
-          type,
-          start_date,
-          end_date,
-          deadline,
+          url,
+          file: req.file.path,
         },
-        { where: { id } }
+        { where: { project_id: id } }
       )
-      .then(() => {
-        return res.status(200).json({ message: "Project Updated" });
-      })
-      .catch((error) => {
+      .catch((err) => {
         return res
           .status(500)
-          .json({ message: "Error updating project", error: error });
+          .json({ message: "error in updating project attachments " + err });
       });
+
+    return res.status(200).json({ message: "Project Updated" });
   }
 );
 
@@ -176,6 +204,10 @@ projects.delete(
   checkInAuthenticator,
   async (req, res) => {
     const { id } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
 
     projectsM
       .destroy({ where: { id: id } })
@@ -203,6 +235,10 @@ projects.post(
   checkInAuthenticator,
   async (req, res) => {
     const { status, id } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
     console.log(id);
 
     const project = await projectsM.findOne({
@@ -235,6 +271,10 @@ projects.post(
   checkInAuthenticator,
   async (req, res) => {
     const { id, userId } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
     console.log(userId + " " + id);
 
     const alreadyExist = await ProjectMembersM.findOne({

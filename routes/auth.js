@@ -8,8 +8,9 @@ const {
   keyAuthenticator,
   checkInAuthenticator,
 } = require("../middlewares/authenticator");
-const { body, validationResult, param } = require("express-validator");
+const { body, validationResult } = require("express-validator");
 const { pendingDetailsM } = require("../models/pending.detalisM");
+const { companyDetailsM } = require("../models/company.detailsM");
 
 auth.post(
   "/login",
@@ -21,7 +22,7 @@ auth.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(422).json({ errors: errors.array() });
     }
 
     const { email, password } = req.body;
@@ -63,7 +64,7 @@ auth.get(
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
-    return res.status(400).json({ message: { user } });
+    return res.status(200).json({ message: { user } });
   }
 );
 
@@ -80,12 +81,22 @@ auth.post(
     body("forgotCode").notEmpty().withMessage("Enter Forgot Code"),
     body("primaryNumber").notEmpty().withMessage("Enter primary phone number"),
     body("primaryAddress").notEmpty().withMessage("Enter primary address"),
+    body("emergencyName")
+      .notEmpty()
+      .withMessage("Enter emergency contact name"),
+
+    body("emergencyEmail").notEmpty().withMessage("Enter emergency email"),
+    body("emergencyNumber").notEmpty().withMessage("Enter emergency address"),
+    body("emergencyAddress").notEmpty().withMessage("Enter emergency address"),
+    body("emergencyrelationship")
+      .notEmpty()
+      .withMessage("Enter emergency relationship"),
   ],
 
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(422).json({ errors: errors.array() });
     }
 
     const {
@@ -98,6 +109,11 @@ auth.post(
       secondaryNumber,
       primaryAddress,
       secondaryAddress,
+      emergencyName,
+      emergencyEmail,
+      emergencyNumber,
+      emergencyAddress,
+      emergencyRelationship,
     } = req.body;
 
     try {
@@ -117,9 +133,62 @@ auth.post(
         secondary_number: parseInt(secondaryNumber, 10),
         primary_address: primaryAddress,
         secondary_address: secondaryAddress,
+        emergency_name: emergencyName,
+        emergency_email: emergencyEmail,
+        emergency_number: emergencyNumber,
+        emergency_address: emergencyAddress,
+        emergency_relationship: emergencyRelationship,
       });
-      return res.status(200).json({
+      return res.status(201).json({
         message: `user '${username}' created`,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        message: "Error: " + err,
+      });
+    }
+  }
+);
+
+auth.post(
+  "/company-details",
+  [
+    body("name").notEmpty().withMessage("Enter Company Name"),
+    body("email").notEmpty().withMessage("Enter email address"),
+    body("primaryNumber").notEmpty().withMessage("Enter primary phone number"),
+    body("primaryAddress").notEmpty().withMessage("Enter primary address"),
+    body("workHours").notEmpty().withMessage("Enter work hours"),
+  ],
+
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    const { name, email, primaryAddress, primaryNumber, workHours } = req.body;
+
+    const isExist = await companyDetailsM.findOne({
+      where: {
+        email: email,
+      },
+    });
+
+    if (isExist) {
+      res.status(409).json({
+        message: `Company already exists with ${email}`,
+      });
+    }
+
+    try {
+      await companyDetailsM.create({
+        name: name,
+        email: email,
+        primary_number: primaryNumber,
+        primary_address: primaryAddress,
+        work_hours: workHours,
+      });
+      return res.status(201).json({
+        message: `Company details created for ${name}`,
       });
     } catch (err) {
       return res.status(500).json({
@@ -137,6 +206,10 @@ auth.post(
     body("forgotCode").notEmpty().withMessage("enter the forgot code"),
   ],
   async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
     try {
       const { email, forgotCode, newPass } = req.body;
 
@@ -182,7 +255,7 @@ auth.post(
         message: err,
       });
     }
-    return res.status(200).json({
+    return res.status(201).json({
       message: "pending request created",
     });
   }
@@ -190,7 +263,7 @@ auth.post(
 
 // for admin
 auth.get(
-  "/pending-requests",
+  "/update-requests",
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
@@ -216,20 +289,19 @@ auth.get(
 );
 
 auth.post(
-  "/admin-approval/:id",
-  [param("id").isInt().withMessage("ID must be an integer")],
+  "/update-decision",
+  [body("id").isInt().withMessage("ID must be an integer")],
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(422).json({ errors: errors.array() });
     }
-    const pendingId = req.params.id;
-    const { action } = req.body;
+    const { id, action } = req.body;
     try {
       const pendingDetails = await pendingDetailsM.findOne({
-        where: { id: pendingId },
+        where: { id: id },
       });
 
       if (!pendingDetails) {

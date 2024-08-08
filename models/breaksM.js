@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { usersM } = require("./usersM");
-const {attendanceM}= require("./attendanceM")
+const { attendanceM } = require("./attendanceM");
 const { dbCon } = require("../db/db");
 
 const BreaksM = dbCon.define(
@@ -22,17 +22,10 @@ const BreaksM = dbCon.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
   },
   {
-    timestamps: false,
+    timestamps: true,
+    underscored: true,
   }
 );
 

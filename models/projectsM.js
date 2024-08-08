@@ -36,36 +36,26 @@ const projectsM = dbCon.define(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM,
+      type: DataTypes.TINYINT,
       allowNull: true,
-      values: ["0", "1"],
-      defaultValue: "0",
+      validate: {
+        min: 0,
+        max: 10,
+      },
+      defaultValue: 0,
     },
     budget: {
       type: DataTypes.DECIMAL,
       allowNull: true,
-    },
-    priority: {
-      type: DataTypes.ENUM("low", "medium", "high"),
-      allowNull: true,
-      defaultValue: "low",
     },
     progress: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 0,
     },
-    attachments: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     description: {
       type: DataTypes.STRING,
       allowNull: true,
-    },
-    type: {
-      type: DataTypes.ENUM(["internal", "external", "client"]),
-      allowNull: false,
     },
     start_date: {
       type: DataTypes.DATE,

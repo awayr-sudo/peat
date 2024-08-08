@@ -3,37 +3,41 @@ const { dbCon } = require("../db/db");
 const { usersM } = require("./usersM");
 const { projectsM } = require("./projectsM");
 
-const ProjectMembersM = dbCon.define("project_members", {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  project_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: projectsM,
-      key: "id",
+const ProjectMembersM = dbCon.define(
+  "project_members",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    project_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: projectsM,
+        key: "id",
+      },
+    },
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: usersM,
+        key: "id",
+      },
+    },
+
+    // user type who was assigned or added in the project
+    user_type: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
   },
-  user_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: usersM,
-      key: "id",
-    },
-  },
-  
-
-
-  // user type which was assigned or added in the project
-  user_type: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-});
+  {
+    underscored: true,
+  }
+);
 
 projectsM.belongsToMany(usersM, {
   through: ProjectMembersM,

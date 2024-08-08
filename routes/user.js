@@ -28,7 +28,7 @@ user.post("/checkin", keyAuthenticator, async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -143,7 +143,7 @@ user.post(
         return res.status(401).send("you are not checked in to have a break");
       }
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
   }
 );
