@@ -48,6 +48,10 @@ const projectsM = dbCon.define(
       type: DataTypes.DECIMAL,
       allowNull: true,
     },
+    all_tasks: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     progress: {
       type: DataTypes.INTEGER,
       allowNull: true,

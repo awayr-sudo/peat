@@ -77,7 +77,7 @@ const usersM = dbCon.define(
 );
 
 usersM
-  .sync({ alter: true })
+  .sync()
   .then(() => console.log("Synced successfully"))
   .catch((error) => console.log("Could not sync the db:", error));
 
