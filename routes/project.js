@@ -298,7 +298,7 @@ projects.post(
       await ProjectMembersM.create({
         project_id: getProject.id,
         user_id: getUser.id,
-        user_type: getUser.role,
+        // user_type: getUser.role,
       }).then(() => {
         return res.status(200).send("User Assigned");
       });

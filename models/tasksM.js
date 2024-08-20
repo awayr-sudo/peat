@@ -34,6 +34,11 @@ const tasksM = dbCon.define(
       type: DataTypes.DATE,
       allowNull: false,
     },
+    priority: {
+      type: DataTypes.TINYINT,
+      allowNull: true,
+      defaultValue: 0, // 0 = general, 1 = medium, 2 = high
+    },
     file: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -48,7 +53,7 @@ const tasksM = dbCon.define(
       // defaultValue: {
       // }
     },
-    tags: {
+    tag: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -56,10 +61,18 @@ const tasksM = dbCon.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    // assigned_to: {
-    //   type: DataTypes.JSON,
-    //   allowNull: true,
-    // },
+    assigned_user1: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    assigned_user2: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    assigned_user3: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     is_done: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
@@ -75,6 +88,7 @@ const tasksM = dbCon.define(
 tasksM.belongsTo(projectsM, {
   foreignKey: "project_id",
   onDelete: "CASCADE",
+  as: "project",
 });
 
 projectsM.hasMany(tasksM, {
@@ -83,7 +97,7 @@ projectsM.hasMany(tasksM, {
 });
 
 tasksM
-  .sync({ alter: true })
+  .sync()
   .then(() => console.log("tasks table synced"))
   .catch((err) => console.log(err));
 

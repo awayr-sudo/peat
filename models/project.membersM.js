@@ -28,11 +28,11 @@ const ProjectMembersM = dbCon.define(
       },
     },
 
-    // user type who was assigned or added in the project
+    /*     // user type who was assigned or added in the project
     user_type: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
+    }, */
   },
   {
     underscored: true,

@@ -17,7 +17,7 @@ const commentsM = dbCon.define(
     },
     sub_task_id: {
       type: DataTypes.INTEGER,
-      allowNull: true, // it will have task id in it for above
+      allowNull: true,
       references: {
         model: subTaskM,
         key: "id",
@@ -32,13 +32,8 @@ const commentsM = dbCon.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    is_issue: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: false,
-    },
-    is_resolved: {
-      type: DataTypes.BOOLEAN,
+    is_edited: {
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: false,
     },
@@ -49,61 +44,22 @@ const commentsM = dbCon.define(
   }
 );
 
-commentsM.afterCreate(async (comment, options) => {
-  if (comment.task_id) {
-    const taskComment = await commentsM.count({
-      where: {
-        task_id: comment.task_id,
-        sub_task_id: null,
-      },
-    });
-    const updatedTaskCount = await tasksM.update(
-      {
-        comments: taskComment,
-      },
-      {
-        where: {
-          id: comment.task_id,
-        },
-      }
-    );
-  }
-
-  if (comment.sub_task_id) {
-    const subTaskComments = await commentsM.count({
-      where: {
-        task_id: comment.task_id,
-        sub_task_id: {
-          [Op.not]: null,
-        },
-      },
-    });
-
-    const updatedSubTasks = await subTaskM.update(
-      { comments: subTaskComments },
-      {
-        where: {
-          id: comment.sub_task_id,
-        },
-      }
-    );
-  }
-});
-
 commentsM.belongsTo(tasksM, {
   foreignKey: "task_id",
   onDelete: "CASCADE",
+  as: "task",
 });
 
 tasksM.hasMany(commentsM, {
   foreignKey: "task_id",
   onDelete: "CASCADE",
-  as: "taskCount",
+  as: "task_comments",
 });
 
 commentsM.belongsTo(subTaskM, {
   foreignKey: "sub_task_id",
   onDelete: "CASCADE",
+  as: "subTask",
 });
 
 subTaskM.hasMany(commentsM, {
@@ -113,7 +69,7 @@ subTaskM.hasMany(commentsM, {
 });
 
 commentsM
-  .sync({ alter: true })
+  .sync()
   .then(() => console.log("comments table created"))
   .catch((err) => console.log("error syncing comments table: " + err));
 

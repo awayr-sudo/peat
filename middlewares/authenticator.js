@@ -1,5 +1,6 @@
 const passport = require("passport");
 const AttendanceM = require("../models/attendanceM");
+const { validationResult } = require("express-validator");
 
 const keyAuthenticator = (req, res, next) => {
   passport.authenticate(
@@ -46,4 +47,19 @@ const checkInAuthenticator = async (req, res, next) => {
   req, res, next;
 };
 
-module.exports = { keyAuthenticator, checkInAuthenticator };
+const validationAuthenticator = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({
+      message: errors.array(),
+    });
+  }
+  next();
+  req, res, next;
+};
+
+module.exports = {
+  keyAuthenticator,
+  checkInAuthenticator,
+  validationAuthenticator,
+};

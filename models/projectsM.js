@@ -1,4 +1,4 @@
-const { DataTypes } = require("sequelize");
+const { DataTypes, Sequelize } = require("sequelize");
 const { dbCon } = require("../db/db");
 const { usersM } = require("./usersM");
 
@@ -31,10 +31,6 @@ const projectsM = dbCon.define(
         key: "id",
       },
     },
-    owned_by: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     status: {
       type: DataTypes.TINYINT,
       allowNull: true,
@@ -50,7 +46,11 @@ const projectsM = dbCon.define(
     },
     all_tasks: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      defaultValue: Sequelize.literal(`(
+        SELECT COUNT(*)
+        FROM tasks
+        WHERE tasks.project_id = projects.id
+      )`),
     },
     progress: {
       type: DataTypes.INTEGER,
@@ -89,8 +89,8 @@ usersM.hasMany(projectsM, {
 });
 
 projectsM
-  .sync({ alter: true })
-  .then(async () => {
+  .sync()
+  .then(() => {
     console.log("Project Table Synced");
   })
   .catch((err) => console.log("Error syncing Project table", err));
