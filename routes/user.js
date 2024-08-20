@@ -1,5 +1,4 @@
 const express = require("express");
-// const router= express.Router()
 const user = express.Router();
 const AttendanceM = require("../models/attendanceM");
 const BreaksM = require("../models/breaksM");
@@ -63,7 +62,7 @@ user.post(
       });
 
       if (attendance) {
-        attendance.check_out = new Date();
+        attendance.check_out = new Date()
         //check_out time shouldn't be before the check_in time
 
         if (attendance.check_out < attendance.check_in) {
@@ -148,5 +147,6 @@ user.post(
   }
 );
 
+
 module.exports = user;
-// module.exports= router
+

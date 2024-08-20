@@ -75,10 +75,9 @@ const usersM = dbCon.define(
     timestamps: false,
   }
 );
-
 usersM
   .sync()
   .then(() => console.log("Synced successfully"))
   .catch((error) => console.log("Could not sync the db:", error));
 
-module.exports = { usersM };
+module.exports = {usersM};

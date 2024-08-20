@@ -1,5 +1,4 @@
 const express = require("express");
-// const router = express.Router()
 const projects = express.Router();
 const { projectsM } = require("../models/projectsM");
 const { ProjectMembersM } = require("../models/project.membersM");
@@ -312,4 +311,4 @@ projects.post(
 );
 
 module.exports = projects;
-// module.exports= router
+
