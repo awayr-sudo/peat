@@ -5,7 +5,11 @@ const { tasksM } = require("./tasksM");
 const subTaskM = dbCon.define("sub_tasks", {
   parent_task_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
+  },
+  parent_sub_task_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
   },
   name: {
     type: DataTypes.STRING,
@@ -76,8 +80,22 @@ tasksM.hasMany(subTaskM, {
   as: "subTasks",
 });
 
+// have to make association so that the api is allowed to make a sub task of another sub task
+
+subTaskM.belongsTo(subTaskM, {
+  foreignKey: "parent_sub_task_id",
+  onDelete: "CASCADE",
+  as: "parentSubTask",
+});
+
+subTaskM.hasMany(subTaskM, {
+  foreignKey: "parent_sub_task_id",
+  onDelete: "CASCADE",
+  as: "treeSubTasks",
+});
+
 subTaskM
-  .sync({ alter: true })
+  .sync()
   .then(() => console.log("sub_tasks table created"))
   .catch((err) => console.log("error syncing sub_tasks table: " + err));
 

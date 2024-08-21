@@ -6,10 +6,6 @@ const applyTokenM = dbCon.define("leavetokens", {
   user_id: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    references:{
-      model:AttendanceM,
-      key:"id"
-    }
   },
   attendance_id: {
     type: DataTypes.INTEGER,
@@ -31,17 +27,13 @@ const applyTokenM = dbCon.define("leavetokens", {
     type: DataTypes.BOOLEAN,
     allowNull: true,
   },
-  remarks:{
-    type:DataTypes.STRING
-  }
-});
-
-applyTokenM.belongsTo(AttendanceM, {
-  foreignKey: "user_id",
+  remarks: {
+    type: DataTypes.STRING,
+  },
 });
 
 applyTokenM
-  .sync({ alter: true })
+  .sync()
   .then(() => console.log("Synced successfully"))
   .catch((error) => console.log("Could not sync the db:", error));
 module.exports = applyTokenM;

@@ -87,7 +87,7 @@ auth.post(
     body("emergencyEmail").notEmpty().withMessage("Enter emergency email"),
     body("emergencyNumber").notEmpty().withMessage("Enter emergency address"),
     body("emergencyAddress").notEmpty().withMessage("Enter emergency address"),
-    body("emergencyrelationship")
+    body("emergencyRelationship")
       .notEmpty()
       .withMessage("Enter emergency relationship"),
   ],
@@ -240,8 +240,11 @@ auth.post(
   async (req, res) => {
     user = req.user;
     // const newDetails = req.body;
-    req.body.password = await bcrypt.hash(req.body.password, 10);
-    delete req.body.email; // delete such entries which we don't want to be updated
+    req.body.password
+      ? (req.body.password = await bcrypt.hash(req.body.password, 10))
+      : "";
+
+    delete req.body.email; // method to delete those entries which we don't want to be updated
 
     try {
       await pendingDetailsM.create({
@@ -251,7 +254,7 @@ auth.post(
       });
     } catch (err) {
       return res.status(500).json({
-        message: err,
+        message: err.message,
       });
     }
     return res.status(201).json({

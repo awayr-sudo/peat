@@ -158,22 +158,8 @@ tasks.get(
 );
 
 // working correctly
-tasks.get(
-  "/project/sub-task/:id",
-  keyAuthenticator,
-  checkInAuthenticator,
-  async (req, res) => {
-    const { id } = req.params;
-    const allSubTasks = await subTaskM.findAll({
-      where: { parent_task_id: id },
-    });
-    return res.status(200).json(allSubTasks);
-  }
-);
-
-// working correctly
 tasks.post(
-  "/project/add-task",
+  "/create-task/:id",
   [
     body("name").isEmpty().withMessage("Enter task name"),
     body("estimatedDate").isEmpty().withMessage("Enter estimated date"),
@@ -186,17 +172,10 @@ tasks.post(
   upload.single("file"),
   async (req, res) => {
     const user = req.user;
+    const projectId = req.params.id;
 
-    const {
-      projectId,
-      name,
-      status,
-      progress,
-      estimatedDate,
-      dueDate,
-      description,
-      tag,
-    } = req.body;
+    const { name, status, progress, estimatedDate, dueDate, description, tag } =
+      req.body;
     const project = await projectsM.findOne({ where: { id: projectId } });
     if (!project) {
       return res.status(404).json({ message: "project not found" });
@@ -210,7 +189,6 @@ tasks.post(
       due_date: dueDate,
       file: req.file ? req.file.path : null,
       description: description,
-      tag: tag,
     });
     taskProjectActivity(
       req.path.split("/")[2],
@@ -229,79 +207,13 @@ tasks.post(
   }
 );
 
-// working correctly
 tasks.post(
-  "/project/add-sub-task",
-  [
-    body("name").isEmpty().withMessage("Enter task name"),
-    body("estimatedDate").isEmpty().withMessage("Enter estimated date"),
-    body("dueDate").isEmpty().withMessage("Enter due date"),
-  ],
-  validationAuthenticator,
-  keyAuthenticator,
-  checkInAuthenticator,
-
-  upload.single("file"),
-  async (req, res) => {
-    const user = req.user;
-
-    const {
-      parentTaskId,
-      name,
-      status,
-      progress,
-      estimatedDate,
-      dueDate,
-      description,
-    } = req.body;
-    const parentTaskExist = await tasksM.findOne({
-      where: { id: parentTaskId },
-    });
-    if (!parentTaskExist) {
-      return res
-        .status(404)
-        .json({ message: "task does not exist with this id" });
-    }
-
-    try {
-      const subTaskAdded = await subTaskM.create({
-        parent_task_id: parentTaskId,
-        name: name,
-        status: status,
-        progress: progress,
-        estimated_date: estimatedDate,
-        due_date: dueDate,
-        file: req.file ? req.file.path : null,
-        description: description,
-      });
-
-      countFields(null, parentTaskExist);
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = "created"),
-        subTaskAdded,
-        (subMainTaskProject = await parentTaskExist.getProject()),
-        (subMainTaskName = parentTaskExist.name)
-      );
-      return res.status(201).json({
-        message: "sub task created",
-        subTaskId: subTaskAdded.id,
-        file: subTaskAdded.file,
-      });
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  }
-);
-
-tasks.post(
-  "/project/delete-task",
+  "/delete-task/:id",
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
-    const { taskId } = req.body;
+    const taskId = req.params.id;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
       return res
@@ -337,66 +249,17 @@ tasks.post(
   }
 );
 
-tasks.post(
-  "/project/delete-sub-task",
-  keyAuthenticator,
-  checkInAuthenticator,
-  async (req, res) => {
-    const user = req.user;
-    const { subTaskId } = req.body;
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-    if (!subTaskExist) {
-      return res
-        .status(404)
-        .json({ message: "sub task does not exist with this id" });
-    }
-    const mainProject = await (await subTaskExist.getTasks()).getProject();
-    const assignedUsers = [
-      subTaskExist.assigned_user1,
-      subTaskExist.assigned_user2,
-      subTaskExist.assigned_user3,
-    ];
-
-    if (user.id != mainProject.created_by && !assignedUsers.includes(user.id)) {
-      return res
-        .status(401)
-        .json({ message: "You are not authorized to delete this sub task" });
-    }
-    try {
-      await subTaskExist.destroy();
-
-      await countFields(null, await subTaskExist.getTasks());
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = "deleted"),
-        subTaskExist,
-        (subMainTaskProject = await (
-          await subTaskExist.getTasks()
-        ).getProject()),
-        (subMainTaskName = (await subTaskExist.getTasks()).name)
-      );
-
-      return res.status(200).json({
-        message: "sub task deleted",
-        parent_task: (await subTaskExist.getTasks()).id,
-      });
-    } catch (err) {
-      return res.status(500).json({ message: err.message });
-    }
-  }
-);
-
 // working correctly
 tasks.post(
-  "/project/task-isdone",
+  "/task-isdone/:id",
   keyAuthenticator,
   checkInAuthenticator,
   [body("isDone").notEmpty().withMessage("select a valid action")],
   validationAuthenticator,
   async (req, res) => {
     const user = req.user;
-    const { taskId, isDone } = req.body;
+    const taskId = req.params.id;
+    const { isDone } = req.body;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
       return res.status(404).json({ message: "No task found with this id" });
@@ -438,67 +301,15 @@ tasks.post(
 
 // working correctly
 tasks.post(
-  "/project/sub-task-isdone",
-  keyAuthenticator,
-  checkInAuthenticator,
-  [body("isDone").notEmpty().withMessage("select a valid action")],
-  validationAuthenticator,
-  async (req, res) => {
-    const { subTaskId, isDone } = req.body;
-    const user = req.user;
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-
-    if (!subTaskExist) {
-      return res.status(404).json({ message: "No task found with this id" });
-    }
-
-    const mainProject = await (await subTaskExist.getTasks()).getProject();
-    const assignedUsers = [
-      subTaskExist.assigned_user1,
-      subTaskExist.assigned_user2,
-      subTaskExist.assigned_user3,
-    ];
-
-    if (user.id != mainProject.created_by && !assignedUsers.includes(user.id)) {
-      return res.status(401).json({
-        message: "you are not authorized to change task state",
-      });
-    }
-
-    if (subTaskExist.is_done == isDone) {
-      return res.status(409).json({
-        message: `task id: ${subTaskId} is already marked as ${isDone}`,
-      });
-    }
-
-    try {
-      subTaskExist.update({ is_done: isDone });
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = isDone == 0 ? "marked as undone" : "marked as done"),
-        subTaskExist.name,
-        (subTaskModule = await subTaskExist.getTasks())
-      );
-      return res
-        .status(200)
-        .json({ message: `task id: ${subTaskId} marked as ${isDone}` });
-    } catch (err) {
-      return res.status(500).json({ message: err });
-    }
-  }
-);
-
-// working correctly
-tasks.post(
-  "/project/task-priority",
+  "/task-priority/:id",
   [body("priority").notEmpty().withMessage("please select a valid action")],
   validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
+    const taskId = req.params.id;
     const user = req.user;
-    const { taskId, priority } = req.body;
+    const { priority } = req.body;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
       return res.status(404).json({ message: "No task found with this id" });
@@ -519,56 +330,13 @@ tasks.post(
       taskProjectActivity(
         req.path.split("/")[2],
         user,
-        (action = `marked as ${priority}`),
+        (action = `priority marked as ${priority}`),
         taskExist.name,
         (taskModule = await taskExist.getProject())
       );
       return res
         .status(200)
         .json({ message: `task id: ${taskId} marked as ${priority}` });
-    } catch (err) {
-      return res.status(500).json({ message: err.message });
-    }
-  }
-);
-
-// working correctly
-tasks.post(
-  "/project/sub-task-priority",
-  [body("priority").notEmpty().withMessage("Please select a valid action")],
-  validationAuthenticator,
-  keyAuthenticator,
-  checkInAuthenticator,
-  async (req, res) => {
-    const user = req.user;
-    const { subTaskId, priority } = req.body;
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-    if (!subTaskExist) {
-      return res.status(404).json({ message: "No task found with this id" });
-    }
-    const assignedUsers = [
-      subTaskExist.assigned_user1,
-      subTaskExist.assigned_user2,
-      subTaskExist.assigned_user3,
-    ];
-
-    if (!assignedUsers.includes(user.id)) {
-      return res
-        .status(401)
-        .json({ message: "You are not authorized to change task state" });
-    }
-    try {
-      await subTaskExist.update({ priority: priority });
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = `marked as ${priority}`),
-        subTaskExist.name,
-        (subTaskModule = await subTaskExist.getTasks())
-      );
-      return res
-        .status(200)
-        .json({ message: `task id: ${subTaskId} marked as ${priority}` });
     } catch (err) {
       return res.status(500).json({ message: err.message });
     }
@@ -584,7 +352,8 @@ tasks.post(
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
-    const { taskId, status } = req.body;
+    const taskId = req.params.id;
+    const { status } = req.body;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
       return res.status(404).json({ message: "No task found with this id" });
@@ -619,57 +388,6 @@ tasks.post(
       return res
         .status(200)
         .json({ message: `task id: ${taskId} marked as ${status}` });
-    } catch (err) {
-      return res.status(500).json({ message: err.message });
-    }
-  }
-);
-
-// working correctly
-tasks.post(
-  "/project/sub-task-status",
-  [body("status").notEmpty().withMessage("Please select a valid action")],
-  validationAuthenticator,
-  keyAuthenticator,
-  checkInAuthenticator,
-  async (req, res) => {
-    const user = req.user;
-    const { subTaskId, status } = req.body;
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-    if (!subTaskExist) {
-      return res.status(404).json({ message: "No task found with this id" });
-    }
-
-    const assignedUsers = [
-      subTaskExist.assigned_user1,
-      subTaskExist.assigned_user2,
-      subTaskExist.assigned_user3,
-    ];
-
-    if (!assignedUsers.includes(user.id)) {
-      return res.status(401).json({
-        message: "You are not authorized to change task state",
-      });
-    }
-
-    if (subTaskExist.status == status) {
-      return res.status(409).json({
-        message: `sub task id: ${subTaskId} is already marked as ${status}`,
-      });
-    }
-
-    try {
-      await subTaskExist.update({ status: status });
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = `status changed to ${status}`),
-        subTaskExist.name,
-        (subTaskModule = await subTaskExist.getTasks())
-      );
-      return res.status(200).json({
-        message: `sub task id: ${subTaskId} marked as ${status}`,
-      });
     } catch (err) {
       return res.status(500).json({ message: err.message });
     }
@@ -786,14 +504,15 @@ tasks.post(
 
 // working correctly
 tasks.post(
-  "/project/update-comment",
+  "/update-comment/:id",
   [body("comment").notEmpty().withMessage("Please provide a comment.")],
   validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
-    const { commentId, comment } = req.body;
+    const commentId = req.params.id;
+    const { comment } = req.body;
 
     if (commentId) {
       const commentExist = await commentsM.findOne({
@@ -840,11 +559,11 @@ tasks.post(
 );
 
 tasks.post(
-  "/project/delete-comment",
+  "/delete-comment/:id",
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
-    const { commentId } = req.body;
+    const commentId = req.params.id;
     const user = req.user;
     const commentExist = await commentsM.findOne({ where: { id: commentId } });
     if (!commentExist) {
@@ -882,13 +601,14 @@ tasks.post(
 
 // working correctly
 tasks.post(
-  "/project/add-task-tag",
+  "/add-task-tag/:id",
   [body("tag").notEmpty().withMessage("Please provide a tag")],
   validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
-    const { taskId, tag } = req.body;
+    const taskId = req.params.id;
+    const { tag } = req.body;
     const user = req.user;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
@@ -935,14 +655,15 @@ tasks.post(
 
 // working correctly
 tasks.post(
-  "/project/edit-task-tag",
+  "/edit-task-tag/:id",
   [body("tag").notEmpty().withMessage("Please enter a tag")],
   validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
-    const { taskId, tag } = req.body;
+    const taskId = req.params.id;
+    const { tag } = req.body;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
       return res
@@ -981,103 +702,13 @@ tasks.post(
 );
 
 // working correctly
-tasks.post(
-  "/project/add-sub-task-tag",
-  [body("tag").notEmpty().withMessage("Please provide a tag.")],
-  validationAuthenticator,
-  keyAuthenticator,
-  checkInAuthenticator,
-  async (req, res) => {
-    const user = req.user;
-    const { subTaskId, tag } = req.body;
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-    if (!subTaskExist) {
-      return res
-        .status(404)
-        .json({ message: "task does not exist with this id" });
-    }
-
-    if (subTaskExist.tag != null) {
-      return res.status(404).json({
-        message: "this task already has an existing tag",
-      });
-    }
-
-    const assignedUsers = [
-      subTaskExist.assigned_user1,
-      subTaskExist.assigned_user2,
-      subTaskExist.assigned_user3,
-    ];
-
-    if (!assignedUsers.includes(user.id)) {
-      return res.status(401).json({
-        message: "You are not authorized to change task state",
-      });
-    }
-
-    try {
-      await subTaskExist.update({ tag: tag });
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = "tagged"),
-        subTaskExist,
-        (subMainTaskProject = await subTaskExist.getTasks()),
-        subTaskExist.parent_task_id
-      );
-      return res
-        .status(200)
-        .json({ message: `successfull tagged task id: ${subTaskId}` });
-    } catch (err) {
-      return res.status(500).json({ error: err });
-    }
-  }
-);
-
-// working correctly
-tasks.post(
-  "/project/edit-sub-task-tag",
-  [body("tag").notEmpty().withMessage("Please provide a tag.")],
-  validationAuthenticator,
-  keyAuthenticator,
-  checkInAuthenticator,
-  async (req, res) => {
-    const user = req.user;
-    const { subTaskId, tag } = req.body;
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-    if (!subTaskExist) {
-      return res
-        .status(404)
-        .json({ message: "task does not exist with this id" });
-    }
-
-    try {
-      await subTaskExist.update({ tag: tag });
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = "update tag"),
-        subTaskExist,
-        (subMainTaskProject = await subTaskExist.getTasks()),
-        subTaskExist.parent_task_id
-      );
-      return res
-        .status(200)
-        .json({ message: `successfull tagged task id: ${subTaskId}` });
-    } catch (err) {
-      return res.status(500).json({ error: err });
-    }
-  }
-);
-
-// working correctly
 tasks.delete(
-  "/project/delete-task-tag",
+  "/delete-task-tag",
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
-    const { taskId } = req.body;
+    const taskId = req.params.id;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
       return res
@@ -1108,53 +739,18 @@ tasks.delete(
   }
 );
 
-// working correctly
-tasks.delete(
-  "/project/delete-sub-task-tag",
-  keyAuthenticator,
-  checkInAuthenticator,
-  async (req, res) => {
-    const user = req.user;
-    const { subTaskId } = req.body;
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-    if (!subTaskExist) {
-      return res
-        .status(404)
-        .json({ message: "task does not exist with this id" });
-    }
-    if (subTaskExist.tag == null) {
-      return res.status(404).json({
-        message: "this task does not have any tag",
-      });
-    }
-    await subTaskExist.update({ tag: null });
-    subTaskProjectActivity(
-      req.path.split("/")[2],
-      user,
-      (action = "removed tag"),
-      (subTaskModule = subTaskExist),
-      (subMainProject = await (await subTaskExist.getTasks()).getProject()),
-      (subMainTaskName = (await subTaskExist.getTasks()).name)
-    );
-    return res.status(200).json({
-      subTask: await subTaskExist.getTasks(),
-      message: `successfull removed tag from task id: ${subTaskId}`,
-    });
-  }
-);
-
 // UPDATE ROUTES
 
 // working correctly
 tasks.post(
-  "/project/update-task",
+  "/update-task/:id",
   keyAuthenticator,
   checkInAuthenticator,
   upload.single("file"),
   async (req, res) => {
     const user = req.user;
+    const taskId = req.params.id;
     const {
-      taskId,
       name,
       status,
       progress,
@@ -1209,78 +805,11 @@ tasks.post(
   }
 );
 
-// working correctly
-tasks.post(
-  "/project/update-sub-task",
-  keyAuthenticator,
-  checkInAuthenticator,
-  upload.single("file"),
-  async (req, res) => {
-    const user = req.user;
-    const {
-      subTaskId,
-      name,
-      status,
-      progress,
-      estimatedDate,
-      dueDate,
-      description,
-      tag,
-      priority,
-      isDone,
-    } = req.body;
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-    if (!subTaskExist) {
-      return res
-        .status(404)
-        .json({ message: "sub-task does not exist with this id" });
-    }
-
-    const project = await (await subTaskExist.getTasks()).getProject();
-    try {
-      await subTaskM.update(
-        {
-          name: name,
-          status: status,
-          progress: progress,
-          estimated_date: estimatedDate,
-          due_date: dueDate,
-          description: description,
-          tag: tag,
-          priority: priority,
-          is_done: isDone,
-          file: req.file ? req.file.path : subTaskExist.file,
-        },
-        {
-          where: {
-            id: subTaskId,
-          },
-        }
-      );
-
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = "updated"),
-        subTaskExist,
-        project,
-        subTaskExist.parent_task_id
-      );
-
-      res
-        .status(200)
-        .json({ message: `successfull updated task id: ${subTaskId}` });
-    } catch (err) {
-      return res.status(500).json({ error: err });
-    }
-  }
-);
-
 // ASSIGN ROUTES
 
 // working correctly
 tasks.post(
-  "/project/task-assign",
+  "/task-assign/:id",
   [
     body("assignedTo")
       .notEmpty()
@@ -1290,7 +819,8 @@ tasks.post(
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
-    const { taskId, assignedTo } = req.body;
+    const taskId = req.params.id;
+    const { assignedTo } = req.body;
     const user = req.user;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
@@ -1345,92 +875,6 @@ tasks.post(
           (action = "assigned"),
           taskExist.name,
           (taskModule = await taskExist.getProject()),
-          (assign = "3")
-        );
-        return res.status(200).json({ message: "user assigned to 3" });
-      } else {
-        return res
-          .status(409)
-          .json({ message: "task already assigned to multiple users" });
-      }
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-// working correctly
-tasks.post(
-  "/project/sub-task-assign",
-  [
-    body("assignedTo")
-      .notEmpty()
-      .withMessage("please provide a user id to assign"),
-  ],
-  validationAuthenticator,
-  keyAuthenticator,
-  checkInAuthenticator,
-  async (req, res) => {
-    const user = req.user;
-    const { subTaskId, assignedTo } = req.body;
-    // return res.send(req.body);
-    const subTaskExist = await subTaskM.findOne({ where: { id: subTaskId } });
-    if (!subTaskExist) {
-      return res
-        .status(404)
-        .json({ message: "task does not exist with this id" });
-    }
-
-    const assingedUsers = [
-      subTaskExist.assigned_user1,
-      subTaskExist.assigned_user2,
-      subTaskExist.assigned_user3,
-    ];
-
-    if (assingedUsers.includes(parseInt(assignedTo))) {
-      return res
-
-        .status(409)
-        .json({ message: "user already assigned to this task" });
-    }
-
-    const mainTask = await subTaskExist.getTasks();
-
-    try {
-      let condition = null || undefined;
-      if (subTaskExist.assigned_user1 == condition) {
-        await subTaskExist.update({ assigned_user1: assignedTo });
-        subTaskProjectActivity(
-          req.path.split("/")[2],
-          user,
-          (action = "assigned"),
-          subTaskExist,
-          (subMainTaskProject = await mainTask.getProject()),
-          (subMainTaskName = mainTask.name),
-          (assign = "1")
-        );
-        return res.status(200).json({ message: "user assigned to 1" });
-      } else if (subTaskExist.assigned_user2 == condition) {
-        await subTaskExist.update({ assigned_user2: assignedTo });
-        subTaskProjectActivity(
-          req.path.split("/")[2],
-          user,
-          (action = "assigned"),
-          subTaskExist,
-          (subMainTaskProject = await mainTask.getProject()),
-          (subMainTaskName = mainTask.name),
-          (assign = "2")
-        );
-        return res.status(200).json({ message: "user assigned to 2" });
-      } else if (subTaskExist.assigned_user3 == condition) {
-        await subTaskExist.update({ assigned_user3: assignedTo });
-        subTaskProjectActivity(
-          req.path.split("/")[2],
-          user,
-          (action = "assigned"),
-          subTaskExist,
-          (subMainTaskProject = await mainTask.getProject()),
-          (subMainTaskName = mainTask.name),
           (assign = "3")
         );
         return res.status(200).json({ message: "user assigned to 3" });

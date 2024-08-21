@@ -57,7 +57,7 @@ BreaksM.belongsTo(usersM, {
   onDelete: "CASCADE",
 });
 
-BreaksM.sync({ alter: true })
+BreaksM.sync()
   .then(() => {
     console.log("BreaksM table synced successfully!");
   })

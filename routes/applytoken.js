@@ -1,6 +1,6 @@
 const express = require("express");
 const applyleave = express.Router();
-const jwt = require("jsonwebtoken");
+// const jwt = require("jsonwebtoken");
 const moment = require("moment");
 const bcrypt = require("bcryptjs");
 const { usersM } = require("../models/usersM");
@@ -14,7 +14,8 @@ const { Op, STRING } = require("sequelize");
 const applyTokenM = require("../models/applyTokenM");
 
 applyleave.post("/extra-hours", keyAuthenticator, async (req, res) => {
-  const { userId } = req.body;
+  const userId = req.user.id;
+  // return res.send(userId);
 
   const AttendanceRecord = await AttendanceM.findOne({
     where: {
@@ -29,7 +30,7 @@ applyleave.post("/extra-hours", keyAuthenticator, async (req, res) => {
     //   sum+=element
     // });
     // console.log(sum)
-  
+
     // const workedMinutes = workedTime.getUTCMinutes();
     // console.log(workedMinutes)
     // const workedSeconds = workedTime.getUTCSeconds();
@@ -46,11 +47,12 @@ applyleave.post("/extra-hours", keyAuthenticator, async (req, res) => {
       extra_Hours: extraHours,
     });
   }
- 
+
   addExtraHours(AttendanceRecord);
 }),
   applyleave.post("/apply-token", keyAuthenticator, async (req, res) => {
     const { userId, reason, leave_approval } = req.body;
+    // const userId = req.user.id
     const AttendanceRecord = await AttendanceM.findOne({
       where: {
         user_id: userId,
@@ -59,21 +61,19 @@ applyleave.post("/extra-hours", keyAuthenticator, async (req, res) => {
     });
     const officeWorkingHours = 9;
     const workedTime = new Date(AttendanceRecord.track_time);
-    
+
     const workedHours = workedTime.getUTCHours();
     const extraHours = workedHours - officeWorkingHours;
     try {
       const userattendance = await AttendanceM.findAll({
         where: {
           user_id: userId,
-          created_at: {
-            [Op.between]: [],
-          },
-          
+          // created_at: {
+          //   [Op.between]: [],
+          // },
         },
       });
 
-     
       if (userattendance) {
         const extraTime = await applyTokenM.create({
           user_id: userId,

@@ -6,8 +6,9 @@ const { usersM } = require("../models/usersM");
 const {
   keyAuthenticator,
   checkInAuthenticator,
+  validationAuthenticator,
 } = require("../middlewares/authenticator");
-const { body, validationResult } = require("express-validator");
+const { body } = require("express-validator");
 const { projectAttachmentsM } = require("../models/project.attachmentsM");
 
 const multer = require("multer");
@@ -65,22 +66,18 @@ projects.post(
         "enter project type, is it internal, external or a client project"
       ),
   ],
+  validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const user = req.user;
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
+
     const {
       name,
       owned_by,
       status,
       budget,
-      priority,
       progress,
-      file,
       url,
       description,
       start_date,
@@ -111,17 +108,21 @@ projects.post(
         end_date: end_date,
         deadline: deadline,
       });
-      try {
-        await projectAttachmentsM.create({
-          project_id: newProject.id,
-          url: url,
-          file: req.file.path,
-        });
-      } catch (err) {
-        return res.status(500).json({
-          message: "project attachment error: " + err,
-        });
+
+      if (url || req.file) {
+        try {
+          await projectAttachmentsM.create({
+            project_id: newProject.id,
+            url: url ? url : null,
+            file: req.file ? req.file.path : null,
+          });
+        } catch (err) {
+          return res.status(500).json({
+            message: "project attachment error: " + err,
+          });
+        }
       }
+
       return res.status(201).json({ message: "project was added" });
     } catch (error) {
       return res.status(500).json({
@@ -133,17 +134,14 @@ projects.post(
 );
 
 projects.post(
-  "/project/edit",
+  "/project/update",
   upload.single("file"),
   [body("id").notEmpty().withMessage("please provide the project id")],
+  validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     // const user = req.user;
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
 
     const {
       // created_by,
@@ -154,9 +152,7 @@ projects.post(
       budget,
       progress,
       url,
-      file,
       description,
-      type,
       start_date,
       end_date,
       deadline,
@@ -170,6 +166,7 @@ projects.post(
         status,
         budget,
         progress,
+        file: req.file ? req.file.path : null,
         description,
         start_date,
         end_date,
@@ -182,7 +179,7 @@ projects.post(
       .update(
         {
           url,
-          file: req.file.path,
+          file: req.file ? req.file.path : null,
         },
         { where: { project_id: id } }
       )
@@ -199,14 +196,11 @@ projects.post(
 projects.delete(
   "/project/delete",
   body("id").notEmpty().withMessage("please provide the project id"),
+  validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const { id } = req.body;
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
 
     projectsM
       .destroy({ where: { id: id } })
@@ -230,14 +224,12 @@ projects.post(
 
   body("id").notEmpty().withMessage("please provide the project id"),
   body("status").notEmpty().withMessage("please provide the project status"),
+  validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const { status, id } = req.body;
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
+
     console.log(id);
 
     const project = await projectsM.findOne({
@@ -265,15 +257,12 @@ projects.post(
   body("id").notEmpty().withMessage("please provide the project id"),
 
   body("userId").notEmpty().withMessage("please provide the user Id"),
-
+  validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     const { id, userId } = req.body;
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
+
     console.log(userId + " " + id);
 
     const alreadyExist = await ProjectMembersM.findOne({
@@ -311,4 +300,3 @@ projects.post(
 );
 
 module.exports = projects;
-

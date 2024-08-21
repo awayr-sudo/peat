@@ -32,7 +32,7 @@ pendingDetailsM.belongsTo(usersM, { foreignKey: "user_id" });
 usersM.hasMany(pendingDetailsM, { foreignKey: "user_id" });
 
 pendingDetailsM
-  .sync({ alter: true })
+  .sync()
   .then(() => console.log("pending table created"))
   .catch((err) => console.log("error: " + err));
 

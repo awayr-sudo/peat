@@ -116,7 +116,7 @@ AttendanceM.belongsTo(usersM, {
   foreignKey: "user_id",
 });
 
-AttendanceM.sync({ alter: true })
+AttendanceM.sync()
   .then(() => {
     console.log("Attendance table synced successfully!");
   })

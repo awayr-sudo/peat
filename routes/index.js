@@ -5,7 +5,8 @@ const Projects = require("./project");
 const User = require("./user");
 const Report = require("./report");
 const Tasks = require("./tasks");
-const ApplyToken= require("./applytoken")
+const SubTask = require("./sub.task");
+const ApplyToken = require("./applytoken");
 
 Index.use(express.json()); // for parsing application/json
 Index.use("/", Auth);
@@ -13,7 +14,8 @@ Index.use("/", Projects);
 Index.use("/", User);
 Index.use("/", Report);
 Index.use("/", Tasks);
-Index.use("/",ApplyToken)
+Index.use("/", SubTask);
+Index.use("/", ApplyToken);
 
 // if the tables are not made in the db
 // then it can be because of some deadlock

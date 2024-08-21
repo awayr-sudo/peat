@@ -12,10 +12,11 @@ const BreaksM = require("../models/breaksM");
 //Generating Attendance report
 report.get("/attendancereport", keyAuthenticator, async (req, res) => {
   const userId = req.user.id;
-  
+
   const { startDate, endDate } = req.body;
 
   const newEndDate = endDate + " 23:59:59";
+
 
   try {
     const reports = await AttendanceM.findAll({
@@ -29,10 +30,10 @@ report.get("/attendancereport", keyAuthenticator, async (req, res) => {
 
     return res.status(200).json({ report: reports });
   } catch (error) {
-    console.log("errror", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while fetching the report." });
+    res.status(500).json({
+      message: "An error occurred while fetching the report.",
+      error: error.message,
+    });
   }
 });
 
@@ -62,8 +63,8 @@ report.get("/breakreport", keyAuthenticator, async (req, res) => {
 });
 // Calculating all Breaks Duration
 report.get("/allbreaks", keyAuthenticator, async (req, res) => {
-  const {startDate,endDate} = req.body;
-  const {user_id}= req.body;
+  const { startDate, endDate } = req.body;
+  const { user_id } = req.body;
   const newEndDate = endDate + " 23:59:59 ";
   try {
     const breakReport = await BreaksM.findAll({
@@ -76,7 +77,6 @@ report.get("/allbreaks", keyAuthenticator, async (req, res) => {
     });
 
     return res.status(200).json({ report: breakReport });
-  }catch{}
-  
+  } catch {}
 });
 module.exports = report;

@@ -46,11 +46,6 @@ const projectsM = dbCon.define(
     },
     all_tasks: {
       type: DataTypes.INTEGER,
-      defaultValue: Sequelize.literal(`(
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE tasks.project_id = projects.id
-      )`),
     },
     progress: {
       type: DataTypes.INTEGER,
