@@ -5,9 +5,13 @@ const { tasksM } = require("./tasksM");
 const tagsM = dbCon.define(
   "tags",
   {
-    object_id: {
+    task_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+    },
+    sub_task_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     tag: {
       type: DataTypes.STRING,

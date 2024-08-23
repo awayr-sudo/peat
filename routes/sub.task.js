@@ -116,9 +116,8 @@ subTask.get(
   }
 );
 
-// working correctly
 subTask.post(
-  "/create-sub-task/:id", // parent task / sub task id  1 | 6
+  "/create-sub-task/:id",
   [
     body("name").isEmpty().withMessage("Enter task name"),
     body("estimatedDate").isEmpty().withMessage("Enter estimated date"),
@@ -127,8 +126,8 @@ subTask.post(
   validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
-
   upload.single("file"),
+
   async (req, res) => {
     const user = req.user;
     const parentTaskId = req.params.id;
@@ -139,25 +138,25 @@ subTask.post(
       estimatedDate,
       dueDate,
       description,
-      subTaskId, // parent_task_id of sub task ? then the creation is of sub task and in self table
+      subTaskId,
     } = req.body;
+
+    // we don't have to worry about sub task at most lower level so forget about it
+
     const parentTaskExist = subTaskId
-      ? await subTaskM.findOne({
-          where: { id: parentTaskId, parent_task_id: subTaskId },
-        })
-      : await tasksM.findOne({
-          where: { id: parentTaskId },
-        });
-    if (!parentTaskExist) {
-      return res
-        .status(404)
-        .json({ message: "task does not exist with this id" });
+      ? await subTaskM.findOne({ where: { id: subTaskId } })
+      : await tasksM.findOne({ where: { id: parentTaskId } });
+
+      if (!parentTaskExist) {
+      return res.status(404).json({
+        message: "Parent task or subtask does not exist with this id",
+      });
     }
 
     try {
       const subTaskAdded = await subTaskM.create({
         parent_task_id: subTaskId ? null : parentTaskId,
-        parent_sub_task_id: subTaskId ? parentTaskExist.id : null,
+        parent_sub_task_id: subTaskId ? subTaskId : null,
         name: name,
         status: status,
         progress: progress,
@@ -166,16 +165,6 @@ subTask.post(
         file: req.file ? req.file.path : null,
         description: description,
       });
-
-      /*       countFields(null, parentTaskExist);
-      subTaskProjectActivity(
-        req.path.split("/")[2],
-        user,
-        (action = "created"),
-        subTaskAdded,
-        (subMainTaskProject = await parentTaskExist.getProject()),
-        (subMainTaskName = parentTaskExist.name)
-      ); */
       return res.status(201).json({
         message: "sub task created",
         subTaskId: subTaskAdded.id,
@@ -186,6 +175,86 @@ subTask.post(
     }
   }
 );
+
+// // working correctly
+// subTask.post(
+//   "/create-sub-task/:id", // parent task / sub task id  1 | 6
+//   [
+//     body("name").isEmpty().withMessage("Enter task name"),
+//     body("estimatedDate").isEmpty().withMessage("Enter estimated date"),
+//     body("dueDate").isEmpty().withMessage("Enter due date"),
+//   ],
+//   validationAuthenticator,
+//   keyAuthenticator,
+//   checkInAuthenticator,
+
+//   upload.single("file"),
+//   async (req, res) => {
+//     const user = req.user;
+//     const parentTaskId = req.params.id;
+//     const {
+//       name,
+//       status,
+//       progress,
+//       estimatedDate,
+//       dueDate,
+//       description,
+//       subTaskId, // parent_task_id of sub task ? then the creation is of sub task and in self table
+//     } = req.body;
+//     // Check if the parent task or subtask exists
+//     // return res.send(parentTaskId);
+//     /*
+
+// */
+
+//     const parentTaskExist = subTaskId
+//       ? await subTaskM.findOne({
+//           where: { id: subTaskId }, // this is the id of the sub task
+//         })
+//       : await tasksM.findOne({
+//           where: { id: parentTaskId },
+//         });
+
+//     // return res.send(parentTaskExist);
+
+//     if (!parentTaskExist) {
+//       return res.status(404).json({
+//         message: "Parent task or subtask does not exist with this id",
+//       });
+//     }
+
+//     try {
+//       const subTaskAdded = await subTaskM.create({
+//         parent_task_id: subTaskId ? null : parentTaskId,
+//         parent_sub_task_id: subTaskId ? subTaskId : null,
+//         name: name,
+//         status: status,
+//         progress: progress,
+//         estimated_date: estimatedDate,
+//         due_date: dueDate,
+//         file: req.file ? req.file.path : null,
+//         description: description,
+//       });
+
+//       return res.status(201).json({
+//         message: "sub task created",
+//         subTaskId: subTaskAdded.id,
+//         file: subTaskAdded.file,
+//       });
+//     } catch (error) {
+//       return res.status(500).json({ error: error.message });
+//     }
+//   }
+//   /*       countFields(null, parentTaskExist);
+//       subTaskProjectActivity(
+//         req.path.split("/")[2],
+//         user,
+//         (action = "created"),
+//         subTaskAdded,
+//         (subMainTaskProject = await parentTaskExist.getProject()),
+//         (subMainTaskName = parentTaskExist.name)
+//       ); */
+// );
 
 subTask.delete(
   "/delete-sub-task/:id",

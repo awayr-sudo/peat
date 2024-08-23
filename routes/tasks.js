@@ -13,6 +13,7 @@ const { subTaskM } = require("../models/sub.tasksM");
 
 const multer = require("multer");
 const { projectActivityM } = require("../models/project.activity");
+const { tagsM } = require("../models/tagsM");
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./uploads");
@@ -180,30 +181,42 @@ tasks.post(
     if (!project) {
       return res.status(404).json({ message: "project not found" });
     }
-    const taskAdded = await tasksM.create({
-      project_id: projectId,
-      name: name,
-      status: status,
-      progress: progress,
-      estimated_date: estimatedDate,
-      due_date: dueDate,
-      file: req.file ? req.file.path : null,
-      description: description,
-    });
-    taskProjectActivity(
-      req.path.split("/")[2],
-      user,
-      (action = "created"),
-      taskAdded.name,
-      (taskProject = project)
-    );
-    countFields(project, null);
+    try {
+      const taskAdded = await tasksM.create({
+        project_id: projectId,
+        name: name,
+        status: status,
+        progress: progress,
+        estimated_date: estimatedDate,
+        due_date: dueDate,
+        file: req.file ? req.file.path : null,
+        description: description,
+      });
 
-    return res.status(201).json({
-      message: "task created",
-      taskId: taskAdded.id,
-      file: taskAdded.file,
-    });
+      tag
+        ? await tagsM.create({
+            object_id: taskAdded.id,
+            tag: tag,
+          })
+        : "";
+
+      taskProjectActivity(
+        req.path.split("/")[2],
+        user,
+        (action = "created"),
+        taskAdded.name,
+        (taskProject = project)
+      );
+      countFields(project, null);
+
+      return res.status(201).json({
+        message: "task created",
+        taskId: taskAdded.id,
+        file: taskAdded.file,
+      });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 );
 
@@ -608,7 +621,7 @@ tasks.post(
   checkInAuthenticator,
   async (req, res) => {
     const taskId = req.params.id;
-    const { tag } = req.body;
+    const { tag, tagId } = req.body;
     const user = req.user;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
@@ -635,7 +648,8 @@ tasks.post(
     }
 
     try {
-      await taskExist.update({ tag: tag });
+      // await taskExist.update({ tag: tag });
+      await tagsM.update({ where: { id: tagId, object_id: taskExist.id } });
       taskProjectActivity(
         req.path.split("/")[2],
         user,
@@ -763,6 +777,7 @@ tasks.post(
     } = req.body;
 
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
+
     if (!taskExist) {
       return res
         .status(404)
