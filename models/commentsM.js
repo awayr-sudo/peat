@@ -6,24 +6,6 @@ const { subTaskM } = require("./sub.tasksM");
 const commentsM = dbCon.define(
   "comments",
   {
-    task_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: tasksM,
-        key: "id",
-      },
-      onDelete: "CASCADE",
-    },
-    sub_task_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: subTaskM,
-        key: "id",
-      },
-      onDelete: "CASCADE",
-    },
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -32,41 +14,41 @@ const commentsM = dbCon.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    is_edited: {
+    status: {
       type: DataTypes.STRING,
       allowNull: true,
-      defaultValue: false,
+    },
+    created_by: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
+    domain: {
+      // like project, task or sub task
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    object: {
+      // that domain id
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    is_pinned: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+    },
+    comment_id: {
+      // sub comments like replies
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
   },
   {
-    timestamps: true,
     underscored: true,
+    timestamps: true,
   }
 );
-
-commentsM.belongsTo(tasksM, {
-  foreignKey: "task_id",
-  onDelete: "CASCADE",
-  as: "task",
-});
-
-tasksM.hasMany(commentsM, {
-  foreignKey: "task_id",
-  onDelete: "CASCADE",
-  as: "task_comments",
-});
-
-commentsM.belongsTo(subTaskM, {
-  foreignKey: "sub_task_id",
-  onDelete: "CASCADE",
-  as: "subTask",
-});
-
-subTaskM.hasMany(commentsM, {
-  foreignKey: "sub_task_id",
-  onDelete: "CASCADE",
-  as: "sub_task_comments",
-});
 
 commentsM
   .sync()

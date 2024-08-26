@@ -47,11 +47,9 @@ user.post(
       });
 
       if (isBreak) {
-        return res
-          .status(400)
-          .json({
-            error: "You are on a break, end the break to checkout first",
-          });
+        return res.status(400).json({
+          error: "You are on a break, end the break to checkout first",
+        });
       }
 
       const attendance = await AttendanceM.findOne({
@@ -62,7 +60,7 @@ user.post(
       });
 
       if (attendance) {
-        attendance.check_out = new Date()
+        attendance.check_out = new Date();
         //check_out time shouldn't be before the check_in time
 
         if (attendance.check_out < attendance.check_in) {
@@ -147,6 +145,4 @@ user.post(
   }
 );
 
-
 module.exports = user;
-

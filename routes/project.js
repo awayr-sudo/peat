@@ -299,4 +299,29 @@ projects.post(
   }
 );
 
+projects.get("/project/report/:id", async (req, res) => {
+  // project details
+  // user involvement
+  // tasks and details
+
+  const id = req.params.id;
+  const project = await projectsM.findOne({ where: { id: id } });
+  const task = await project.getTasks(); // number of tasks
+  var taskCompleted = "";
+  task.forEach((element) => {
+    element.status == 2 ? ++taskCompleted : "";
+    // console.log(element.status);
+  });
+  const projectMembersCount = (await project.getUsers()).length;
+
+  return res.json({
+    projectDetails: project,
+    projectMembers: projectMembersCount,
+    taskCount: task.length,
+    tasksCompleted: "completed: " + taskCompleted,
+  });
+
+  return res.send(projectMembers);
+});
+
 module.exports = projects;
