@@ -18,7 +18,8 @@ const tasksM = dbCon.define(
       allowNull: false,
     },
     status: {
-      type: DataTypes.TINYINT,
+      type: DataTypes.TINYINT, //  0: pending, 1: in progress, 2: completed
+
       allowNull: true,
       defaultValue: 0,
     },
@@ -52,10 +53,6 @@ const tasksM = dbCon.define(
       allowNull: true,
       // defaultValue: {
       // }
-    },
-    tag: {
-      type: DataTypes.STRING,
-      allowNull: true,
     },
     sub_tasks: {
       type: DataTypes.INTEGER,

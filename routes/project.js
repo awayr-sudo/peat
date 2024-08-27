@@ -8,10 +8,12 @@ const {
   checkInAuthenticator,
   validationAuthenticator,
 } = require("../middlewares/authenticator");
-const { body } = require("express-validator");
+const { body, param } = require("express-validator");
 const { projectAttachmentsM } = require("../models/project.attachmentsM");
 
 const multer = require("multer");
+const { Op } = require("sequelize");
+const { projectActivityM } = require("../models/project.activity");
 const storage = multer.diskStorage({
   // this gives us full control of file storing
   destination: (req, file, cb) => {
@@ -134,19 +136,18 @@ projects.post(
 );
 
 projects.post(
-  "/project/update",
+  "/project/update/:id",
   upload.single("file"),
-  [body("id").notEmpty().withMessage("please provide the project id")],
+  // [param("id").notEmpty().withMessage("please provide the project id")],
   validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
     // const user = req.user;
-
+    const id = req.params.id;
     const {
       // created_by,
       // owned_by,
-      id,
       name,
       status,
       budget,
@@ -253,15 +254,16 @@ projects.post(
 );
 
 projects.post(
-  "/project/assign",
-  body("id").notEmpty().withMessage("please provide the project id"),
+  "/project/:id/assign",
+  param("id").notEmpty().withMessage("please provide the project id"),
 
   body("userId").notEmpty().withMessage("please provide the user Id"),
   validationAuthenticator,
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
-    const { id, userId } = req.body;
+    const id = req.params.id;
+    const { userId } = req.body;
 
     console.log(userId + " " + id);
 
@@ -279,6 +281,9 @@ projects.post(
       where: { id: id },
     });
     const getUser = await usersM.findOne({ where: { id: userId } });
+    if (!getUser) {
+      return res.status(404).send("User not found");
+    }
 
     try {
       console.log(getProject.id + " " + getUser.id);
@@ -293,7 +298,7 @@ projects.post(
     } catch (error) {
       res.status(500).json({
         message: "Assigning User to Project Error",
-        error: error,
+        error: error.message,
       });
     }
   }
@@ -305,23 +310,161 @@ projects.get("/project/report/:id", async (req, res) => {
   // tasks and details
 
   const id = req.params.id;
+  const { startDate, endDate } = req.body;
+  // return res.send(startDate + " " + new Date().toDateString());
+
   const project = await projectsM.findOne({ where: { id: id } });
-  const task = await project.getTasks(); // number of tasks
+  const tasks = await project.getTasks(); // number of tasks
+  var taskNotStarted = "";
+  var taskInProgress = "";
   var taskCompleted = "";
-  task.forEach((element) => {
+  var weekCompletedTasks = "";
+  var weekNotStartedTasks = "";
+  var weekInProgressTasks = "";
+  var unassignedTasks = "";
+  const weekStartTime = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    new Date().getDate() - 7,
+    23,
+    59,
+    59
+  );
+  const generalPriority = [];
+  const mediumPriority = [];
+  const highPriority = [];
+  const weekGeneralPriority = [];
+  const weekMediumPriority = [];
+  const weekHighPriority = [];
+
+  const startSplit = startDate ? startDate.split("/") : "";
+  const endSplit = endDate ? endDate.split("/") : "";
+  startSplit[1] != 0 ? --startSplit[1] : "";
+
+  const opBetween = [
+    startDate
+      ? new Date(startSplit[0], startSplit[1], startSplit[2], 0, 0, 0)
+      : weekStartTime,
+    endDate
+      ? new Date(endSplit[0], endSplit[1], endSplit[2], 23, 59, 59)
+      : new Date(),
+  ];
+
+  // return res.send(opBetween);
+
+  const createdTasks = await project.getTasks({
+    where: {
+      created_at: { [Op.between]: opBetween },
+    },
+  });
+
+  // return res.send(opBetween);
+
+  const dueTasks = await project.getTasks({
+    where: {
+      due_date: { [Op.between]: opBetween },
+    },
+  });
+
+  dueTasks.forEach((element) => {
+    element.priority == 0 ? weekGeneralPriority.push(element) : "";
+    element.priority == 1 ? weekMediumPriority.push(element) : "";
+    element.priority == 2 ? weekHighPriority.push(element) : "";
+  });
+
+  tasks.forEach((element) => {
+    element.status == 0 ? ++taskNotStarted : "";
+    element.status == 1 ? ++taskInProgress : "";
     element.status == 2 ? ++taskCompleted : "";
+    element.assigned_user1 === null &&
+    element.assigned_user2 === null &&
+    element.assigned_user3 === null
+      ? ++unassignedTasks
+      : "";
+    element.priority == 0 ? generalPriority.push(element) : "";
+    element.priority == 1 ? mediumPriority.push(element) : "";
+    element.priority == 2 ? highPriority.push(element) : "";
+
     // console.log(element.status);
   });
+
+  createdTasks.forEach((element) => {
+    element.status == 0 ? ++weekNotStartedTasks : "";
+    element.status == 1 ? ++weekInProgressTasks : "";
+    element.status == 2 ? ++weekCompletedTasks : "";
+  });
+
   const projectMembersCount = (await project.getUsers()).length;
+  const projectActivity = await projectActivityM.findAll({
+    where: {
+      project_id: id,
+    },
+    created_at: { [opBetween]: opBetween },
+  });
 
   return res.json({
     projectDetails: project,
     projectMembers: projectMembersCount,
-    taskCount: task.length,
-    tasksCompleted: "completed: " + taskCompleted,
+    totalTaskCount: tasks.length,
+    totalUnassignedTasks: unassignedTasks,
+    totalWorkLoad: {
+      notStarted: taskNotStarted ? taskNotStarted : 0,
+      inProgress: taskInProgress ? taskInProgress : 0,
+    },
+    completedTasks: taskCompleted ? taskCompleted : 0,
+    totalPriorityTasks: {
+      general: generalPriority.length ? generalPriority.length : 0,
+      medium: mediumPriority.length ? mediumPriority.length : 0,
+      high: highPriority.length ? highPriority.length : 0,
+    },
+    selectedTimeSpan: [
+      { createdTasks: createdTasks.length },
+      { dueTasks: dueTasks.length },
+      {
+        tasksPriority: {
+          general: weekGeneralPriority.length ? weekGeneralPriority.length : 0,
+          medium: weekMediumPriority.length ? weekMediumPriority.length : 0,
+          high: weekHighPriority.length ? weekHighPriority.length : 0,
+        },
+      },
+      {
+        tasksStatus: {
+          notStarted: weekNotStartedTasks ? weekNotStartedTasks : 0,
+          inProgress: weekInProgressTasks ? weekInProgressTasks : 0,
+          completed: weekCompletedTasks ? weekCompletedTasks : 0,
+        },
+      },
+    ],
+    projectActivity: projectActivity,
   });
-
-  return res.send(projectMembers);
 });
+
+//   return res.json({
+//     projectDetails: project,
+//     projectMembers: projectMembersCount,
+//     taskCount: tasks.length,
+
+//     unassignedTasks: unassignedTasks,
+//     workLoad: {
+//       tasksNotStarted: taskNotStarted ? taskNotStarted : 0,
+//       tasksInProgress: taskInProgress ? taskInProgress : 0,
+//     },
+//     tasksCompleted: taskCompleted ? taskCompleted : 0,
+//     totalPriorityTasks: {},
+//     thisWeek: [
+//       { CreatedTasks: createdTasks.length },
+//       { DueTasks: dueTasks.length },
+//       {
+//         thisWeekPriorityTasks: {
+//           general: weekGeneralPriority ? weekGeneralPriority : 0,
+//           medium: weekMediumPriority ? weekMediumPriority : 0,
+//           high: weekHighPriority ? weekHighPriority : 0,
+//         },
+//       },
+//     ],
+
+//     projectActivity: projectActivity,
+//   });
+// });
 
 module.exports = projects;

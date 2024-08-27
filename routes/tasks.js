@@ -358,7 +358,7 @@ tasks.post(
 
 // working correctly
 tasks.post(
-  "/project/task-status",
+  "/task-status/:id",
   [body("status").notEmpty().withMessage("Please select a valid action")],
   validationAuthenticator,
   keyAuthenticator,
@@ -621,7 +621,7 @@ tasks.post(
   checkInAuthenticator,
   async (req, res) => {
     const taskId = req.params.id;
-    const { tag, tagId } = req.body;
+    const { tag } = req.body;
     const user = req.user;
     const taskExist = await tasksM.findOne({ where: { id: taskId } });
     if (!taskExist) {
@@ -629,9 +629,16 @@ tasks.post(
         .status(404)
         .json({ message: "task does not exist with this id" });
     }
-    if (taskExist.tag != null) {
+    const tagExist = await tagsM.findOne({
+      where: {
+        object_id: taskId,
+        object_type: 0,
+        tag: tag,
+      },
+    });
+    if (tagExist) {
       return res.status(404).json({
-        message: "this task already has an existing tag",
+        message: "this task already has an this tag",
       });
     }
 
@@ -649,7 +656,12 @@ tasks.post(
 
     try {
       // await taskExist.update({ tag: tag });
-      await tagsM.update({ where: { id: tagId, object_id: taskExist.id } });
+      await tagsM.create({
+        object_id: taskId,
+        tag: tag,
+      });
+      // console.log("okay here");
+
       taskProjectActivity(
         req.path.split("/")[2],
         user,
@@ -667,7 +679,7 @@ tasks.post(
   }
 );
 
-// working correctly
+// working correctly  comments
 tasks.post(
   "/edit-task-tag/:id",
   [body("tag").notEmpty().withMessage("Please enter a tag")],
@@ -717,7 +729,7 @@ tasks.post(
 
 // working correctly
 tasks.delete(
-  "/delete-task-tag",
+  "/delete-task-tag/:id",
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
@@ -729,13 +741,20 @@ tasks.delete(
         .status(404)
         .json({ message: "task does not exist with this id" });
     }
-    if (taskExist.tag == null) {
+
+    const tagExist = await tagsM.findOne({
+      where: {
+        object_id: taskId,
+        tag: tag,
+      },
+    });
+    if (!tagExist) {
       return res.status(404).json({
         message: "this task does not have any tag",
       });
     }
     try {
-      await taskExist.update({ tag: null });
+      await tagExist.destroy();
       taskProjectActivity(
         req.path.split("/")[2],
         user,
@@ -834,6 +853,7 @@ tasks.post(
   keyAuthenticator,
   checkInAuthenticator,
   async (req, res) => {
+    const id = req.params.id;
     const taskId = req.params.id;
     const { assignedTo } = req.body;
     const user = req.user;
