@@ -105,34 +105,7 @@ applyleave.post("/extra-hours", keyAuthenticator, async (req, res) => {
       // return res.status(200).json(results.filter(result => result !== null));
       return res.status(200).json(results);
       
-      // const userattendance = await AttendanceM.findAll({
-      //   where: {
-      //     user_id: userId,
-      //     created_at: {
-      //       [Op.between]: [new Date(startDate), new Date(newEndDate)],
-      //     },
-      //   },
-      // });
-
-      // if (attendanceReport.length > 0) {
-      //   let totalWorkedTime = 0;
-
-      //   // Summing up all worked time for the user within the date range
-      //   attendanceReport.forEach((report) => {
-      //     totalWorkedTime += report.track_time;
-      //   });
-
-      //   if (userattendance) {
-      //     const extraTime = await applyTokenM.create({
-      //       user_id: userId,
-      //       // attendance_id: AttendanceRecord.id,
-      //       reason,
-      //       leave_approval,
-      //       extra_hours: extraHours,
-      //     });
-      //     return res.status(200).json(extraTime);
-      //   }
-      // }
+      
     } catch (error) {}
   });
 module.exports = applyleave;

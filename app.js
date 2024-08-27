@@ -8,7 +8,7 @@ const port = process.env.PORT;
 const report = require("./routes/report");
 // const applyleave = require("./routes/applytoken");
 
-// const passport= require("passport")
+
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -24,5 +24,4 @@ app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
 
-const currentdate = new Date();
-console.log(currentdate);
+
