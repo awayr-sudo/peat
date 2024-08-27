@@ -4,7 +4,7 @@ const passport = require("./middlewares/strategies");
 // const sequelize = require("./db/db");
 // const userRouter = require("./routes/index");
 const app = express();
-// const port = process.env.PORT;
+const port = process.env.PORT;
 const report = require("./routes/report");
 // const applyleave = require("./routes/applytoken");
 
