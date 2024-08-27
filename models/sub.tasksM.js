@@ -53,10 +53,6 @@ const subTaskM = dbCon.define("sub_tasks", {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  tag: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
   is_done: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
