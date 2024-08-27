@@ -23,28 +23,31 @@ const BreaksM = dbCon.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
+    
+    // break_duration: {
+    //   type: DataTypes.VIRTUAL,
+    //   get() {
+    //     const startBreak = this.getDataValue("start_break");
+    //     const endBreak = this.getDataValue("end_break");
 
-    break_duration: {
-      type: DataTypes.VIRTUAL,
-      get() {
-        const startBreak = this.getDataValue("start_break");
-        const endBreak = this.getDataValue("end_break");
+    //     if (startBreak && endBreak) {
+    //       // const breakTrack= this.getDataValue("break_duration")
+    //       const breakTrack = new Date(endBreak - startBreak); // duration in (hh:mm:ss) format
+    //       const breakTrackSeconds = breakTrack.getUTCSeconds(); //Getting seconds
+    //       const breakTrackMinutes = breakTrack.getUTCMinutes(); //Getting minutes
+    //       const breakTrackHours = breakTrack.getUTCHours(); //Getting hours
+    //       const breakTrackTime =
+    //         breakTrackHours + ":" + breakTrackMinutes + ":" + breakTrackSeconds;
+    //       return breakTrackTime
+    //     } 
+    //     // else if(startBreak && endBreak==null){
+    //     //   const breakTrackTime= new Date();
+    //     //   return breakTrack
 
-        if (startBreak && endBreak) {
-          const breakTrack = new Date(endBreak - startBreak); // duration in (hh:mm:ss) format
-          return breakTrack;
-        }
-        return null;
-      },
-    },
+    //     // }
+    //     // return null;
+    //   },
+    // },
   },
   {
     timestamps: true,

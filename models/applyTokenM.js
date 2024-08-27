@@ -7,10 +7,10 @@ const applyTokenM = dbCon.define("leavetokens", {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
-  attendance_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
+  // attendance_id: {
+  //   type: DataTypes.INTEGER,
+  //   allowNull: true,
+  // },
   // leave_token: {
   //   type: DataTypes.STRING,
   //   allowNull: true,
@@ -31,6 +31,12 @@ const applyTokenM = dbCon.define("leavetokens", {
     type: DataTypes.STRING,
   },
 });
+  remarks:{
+    type:DataTypes.STRING
+  }
+
+
+
 
 applyTokenM
   .sync()
